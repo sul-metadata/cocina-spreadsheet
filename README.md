@@ -87,13 +87,17 @@ rows are dropped. Formulas and drop-downs are automatically filled down for all 
 
 ## Creating metadata and exporting
 
-The workbook may be uploaded to Google Sheets or used directly in Excel. If you did not upload a title list, only the fourth row contains formulas and drop-downs - **fill down this row to the maximum number of rows you think you might need before beginning to enter metadata.** If you need to fill down more rows, do so before completing the last formula row - that way you will fill down only the formulas and drop-downs, not entered metadata. If you fill down more rows than you need, it isn't a problem - rows without a
+The workbook may be uploaded to Google Sheets or used directly in Excel. If you did not
+upload a title list, only the fourth row contains formulas and drop-downs — **fill down
+this row to the maximum number of rows you think you might need before beginning to
+enter metadata.** If you need to fill down more rows, do so before completing the last
+formula row — that way you will fill down only the formulas and drop-downs, not entered
+metadata. If you fill down more rows than you need, it isn't a problem — rows without a
 druid will be ignored when uploading to Argo.
 
-
-**Google Sheets** — upload the `.xlsx` to Drive and open with Sheets. When you are done creating metadata,
-export with File → Download → Comma Separated Values. Don't open the downloaded CSV in
-Excel; that may change the encoding and date formatting.
+**Google Sheets** — upload the `.xlsx` to Drive and open with Sheets. When you are done
+creating metadata, export with File → Download → Comma Separated Values. Don't open the
+downloaded CSV in Excel; that may change the encoding and date formatting.
 
 **Excel** — open the `.xlsx` and create metadata in it directly. Two things to look for
 when exporting the file to CSV:
