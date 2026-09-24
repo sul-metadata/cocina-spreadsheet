@@ -81,7 +81,10 @@ cc234de5678,sierra_club_002,Vernal Fall in spring
 ```
 
 Columns are read by position, not by name; a heading row is detected and skipped; blank
-rows are dropped. Formulas and drop-downs are automatically filled down for all entries.
+rows are dropped. Formulas and drop-downs are automatically filled down for all entries,
+and for one more row below them. That last row is empty but has its formulas and
+drop-downs in place, so if you add objects later, fill down from it rather than from the
+last entry — that way you copy only the formulas and drop-downs, not entered metadata.
 
 ---
 
