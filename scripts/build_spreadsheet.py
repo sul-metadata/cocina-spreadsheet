@@ -973,14 +973,22 @@ def generate_sheet(tpl, instances, total_cols, data_rows, seed=None):
                      "source_id": prefix.map["B"],
                      "title": entry[0]}
 
-    # formula row, plus one row per seeded object with the formulas filled down
+    # formula row, plus one row per seeded object with the formulas filled down,
+    # plus one spare row past the last object: it carries the formulas and
+    # dropdowns but no druid, source id or title, so it is the row to fill down
+    # from when more objects are added. Filling down from the last object's row
+    # would drag that object's druid, source id and title along with the
+    # formulas. Without a seed there is nothing to be past, and row 4 is
+    # already that row.
     src_row = tpl.rows.get(FORMULA_ROW, {})
     blank_src = tpl.rows.get(BLANK_ROW, {})
     n_seeded = len(seed) if seed else 0
-    last_data_row = FORMULA_ROW + max(n_seeded - 1, 0)
+    spare = 1 if n_seeded else 0
+    last_data_row = FORMULA_ROW + max(n_seeded - 1, 0) + spare
 
     for r in range(FORMULA_ROW, last_data_row + 1):
-        record = seed[r - FORMULA_ROW] if seed else None
+        idx = r - FORMULA_ROW
+        record = seed[idx] if idx < n_seeded else None
         buf = [row_open(FORMULA_ROW).replace('r="%d"' % FORMULA_ROW,
                                              'r="%d"' % r, 1)]
         for inst in instances:
@@ -1237,10 +1245,11 @@ def main(argv=None):
     print("Wrote %s" % args.output)
     if seed:
         last = FORMULA_ROW + len(seed) - 1
+        spare_row = last + 1
         print("  %d columns (A:%s), %d header rows, %d populated rows "
-              "(%d-%d), %d blank rows below"
+              "(%d-%d), 1 spare formatted row (%d), %d blank rows below"
               % (total, idx_to_col(total), len(HEADER_ROWS), len(seed),
-                 FORMULA_ROW, last, data_rows))
+                 FORMULA_ROW, last, spare_row, data_rows))
         if skipped_header:
             print("  skipped the data file's heading row: %s"
                   % " | ".join(skipped_header))
@@ -1256,7 +1265,8 @@ def main(argv=None):
                 print("    row %d  %s" % (n, ident))
             if len(blank) > 8:
                 print("    ... and %d more" % (len(blank) - 8))
-        print("  formulas and dropdowns filled down through row %d\n" % last)
+        print("  formulas and dropdowns filled down through row %d, one past "
+              "the last object\n" % spare_row)
     else:
         print("  %d columns (A:%s), %d header rows + 1 formula row + "
               "%d blank rows\n"

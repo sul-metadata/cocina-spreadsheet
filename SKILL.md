@@ -48,13 +48,19 @@ Ask for the blocks they want and how many of each. Blocks they don't mention are
 out of the workbook entirely, so it's worth confirming omissions rather than assuming
 them.
 
-**Never add a block they didn't ask for — recommend it instead.** If a block looks
-necessary (a batch with no `form` block carries no resource type, which the SDR load
-wants), say so and let them decide, rather than putting it in and noting it afterwards.
-The reasoning that makes adding it tempting — an unused block loads as nothing, while a
-missing one means a rebuild — is real, and it is an argument for *raising* the block in
-Step 2, not for widening the spec yourself. What they asked for is the spec; a column
-they never agreed to is a column someone has to be told to ignore.
+**Never add a block they didn't ask for — suggest it instead.** If a block looks like
+something the batch will want, say so and let them decide, rather than putting it in and
+noting it afterwards. The reasoning that makes adding it tempting — an unused block
+loads as nothing, while a missing one means a rebuild — is real, and it is an argument
+for *raising* the block in Step 2, not for widening the spec yourself. What they asked
+for is the spec; a column they never agreed to is a column someone has to be told to
+ignore.
+
+**Suggest, don't insist, and don't invent a requirement.** `form` is the usual candidate
+— it holds resource type, genre, extent and media type, which many batches want — so
+naming it when it's missing is useful. But it is not required: say "worth considering",
+not "the load needs it". The only requirement to state is `title`, which the builder
+itself rejects a spec without.
 
 Two blocks are not the caller's choice. `title` is required — every object needs one,
 so ask how many titles rather than whether they want any, and the builder rejects a
@@ -124,11 +130,19 @@ Every question the tool shows also carries an "Other" choice for free text, whic
 how someone names a folder or a filename you didn't offer — so offering two options
 costs them nothing and saves everyone else the typing.
 
-Show the parsed block list as text first, since it is too long to sit in a question
-label, then ask:
+**Call them field sets, not blocks, in anything the user reads.** `block` is the
+builder's word: the spec key, `--list-blocks`, `references/blocks.md` and the column
+ranges in this file all keep it. What the user sees says *field set* — "Build these
+field sets", "Field sets to include", "2 access field sets". The term is also the more
+accurate one for them: each is a group of related fields, which is what they get.
+
+Show the parsed list in the message *before* the `AskUserQuestion` call, as plain text.
+Never put it inside a question's text or an option label: it runs to a dozen lines, so
+a question carrying it renders as a wall of text above two buttons, and it reappears
+every time they look at that question. Then ask:
 
 ```
-Blocks to include:
+Field sets to include:
  - 1 title
  - 2 contributors (3 roles on the first, 1 on the second)
  - 2 subjects
@@ -139,14 +153,44 @@ Leaving out: form/genre, origin info, language, note, identifier, related resour
 
 | question | options |
 |---|---|
-| Build these blocks, or choose Other to describe changes? | `Build as listed` · one concrete amendment, e.g. `Add origin info` |
-| Which folder? | `Desktop` · `Documents` |
-| Filename? | `cocina_spreadsheet.xlsx` · `project_workbook.xlsx` |
-| Pre-fill the rows? | `Build it empty` · `I'll upload a list` |
+| Build these field sets, or choose Other to describe changes? | `Build as listed` · one concrete amendment, e.g. `Add origin info` |
+| Which folder should it go in? | `Desktop` · `Documents` |
+| What should the file be called? | `cocina_spreadsheet.xlsx` · `project_workbook.xlsx` |
+| Pre-fill the rows from a list of objects? | `Build it empty` · `I'll upload a list` |
 
-Keep the labels that short — they are buttons, not sentences; the reasoning goes in each
-option's description. If they pick `I want changes` or `I'll upload a list`, the next
-message is theirs: the correction, or the uploaded file.
+The `header` chip on each question is user-visible as well, so it follows the same
+vocabulary: `Field sets`, `Folder`, `Filename`, `Prefill`.
+
+**Labels stay short, but never leave them to speak for themselves.** They are buttons;
+the person reading them may not know this template, so each one needs a description
+saying *what happens if they pick it*, in concrete terms:
+
+- `Desktop` → "C:\Users\arcadia\Desktop — the file will be sitting there when you
+  switch windows."
+- `cocina_spreadsheet.xlsx` → "The workbook is saved under this name, in whichever
+  folder you pick above."
+- `Build it empty` → "Formulas on row 4, ready to fill down. You type the druids and
+  titles yourself."
+- `I'll upload a list` → "Upload a .csv, .tsv or .xlsx with druid, source ID and title
+  in the first three columns. Each object gets a row with its formulas already filled
+  down, so no identifier is typed by hand, plus one empty row below them to fill down
+  from if you add more objects."
+- `Build as listed` → restate the shape in one line — "1 title, 2 contributors with one
+  role each, 3 subjects, access information, admin metadata; about 110 columns."
+
+**Describe the consequence, don't recommend the choice.** "Formulas on row 4, ready to
+fill down" is context; "probably what you want" is advice. The distinction matters most
+on the filename, where there is nothing to recommend — but don't fill that gap with a
+full path. All four questions are shown at once, so the folder is still unanswered
+while they are reading the filename: a description promising
+`C:\Users\arcadia\Documents\cocina_spreadsheet.xlsx` names a folder they may never
+pick, and in testing it named one they hadn't. Describe the name; let the folder
+question own the folder.
+
+Put the same care into the question text. "Which folder?" assumes they know why they're
+being asked; "Which folder should it go in?" with the paths in the descriptions tells
+them what the answer decides. If they pick the amendment option or `I'll upload a list`,
+the next message is theirs: the correction, or the uploaded file.
 
 **Folder and filename are separate questions.** Each has two real options, so neither
 needs padding: `Desktop` or `Documents` for the folder, `cocina_spreadsheet.xlsx` or
@@ -165,9 +209,9 @@ This bites hardest on the block question, where the alternative to "yes" is an
 open-ended correction. Don't render that as `I want changes`. Offer **`Build as listed`
 plus the one concrete amendment you would otherwise have recommended** — `Add origin
 info`, `Add a contributor` — so both options are directly actionable, and put the
-free-text route in the *question text* instead: "Build these blocks, or choose Other to
-describe changes?". Naming Other in the question is not the duplicate the rule above
-forbids; it is a pointer to the real control rather than a decoy beside it.
+free-text route in the *question text* instead: "Build these field sets, or choose
+Other to describe changes?". Naming Other in the question is not the duplicate the
+rule above forbids; it is a pointer to the real control rather than a decoy beside it.
 
 If no concrete amendment is worth offering, the second option can be the block you most
 expect them to drop — anything real. What it cannot be is a label that means "let me
@@ -238,12 +282,12 @@ been handed nothing.
   choose when they haven't; it is not a veto over what they ask for.
 - **Filename: offer `cocina_spreadsheet.xlsx` and `project_workbook.xlsx`, with no
   advice about which to pick.** Naming is theirs. Don't explain when each one fits,
-  don't suggest a name from the batch they described, and don't comment on their
-  choice once they've made it — someone who ends up with several of these may want
-  `sierra_club_photos.xlsx`, and "Other" is where that goes. Keep each option's
-  description factual, or leave it at naming the default; a recommendation in a button
-  is noise. If they give a name without `.xlsx`, or with a different extension, replace
-  it with `.xlsx`.
+  don't suggest a name from the batch they described, and don't comment on their choice
+  once they've made it — someone who ends up with several of these may want
+  `sierra_club_photos.xlsx`, and "Other" is where that goes. Each option still needs a
+  description, but the useful one is the resulting full path, not a reason to prefer it.
+  If they give a name without `.xlsx`, or with a different extension, replace it with
+  `.xlsx`.
 - Write Windows paths with backslashes here, the same form Step 6 shows in the `File at:`
   line, so the path you confirm and the path they end up with read identically.
 
@@ -299,10 +343,17 @@ How the file is read, so you can set expectations:
   deliberate: it is the cell the formulas read to decide whether the title is simple or
   structured, so a title written anywhere else would not drive `title1.value`.
 
-Each object gets a row, and **the formulas and dropdowns are filled down across exactly
-those rows** — so `purl` derives per row from that row's own druid, the whole
-`adminMetadata` run populates immediately, and every lookup dropdown is live on each row
-rather than only the first. Rows below the data stay blank for anything added later.
+Each object gets a row, and **the formulas and dropdowns are filled down across those
+rows plus one spare row past the last object** — so `purl` derives per row from that
+row's own druid, the whole `adminMetadata` run populates immediately, and every lookup
+dropdown is live on each row rather than only the first.
+
+**The spare row is there to fill down from.** It carries the formulas, dropdowns and
+formatting but no druid, source id or title, so dragging it down copies only the
+formulas and dropdowns. Filling down from the last object's row instead would copy that
+object's druid, source id and title into every row it touches, and the entered metadata
+would have to be cleared out again. Below the spare row the plain blank rows continue as
+in an empty workbook.
 
 The builder reports how many rows it populated, which heading row it skipped, and warns
 about rows with no title. Read that back to the user — a count that doesn't match their
@@ -419,6 +470,10 @@ entered", "the person creating the metadata" — never "before cataloguing start
 block, whose field genuinely holds the *cataloguing agency* and whose derived value
 reads "original cataloging agency"; name that field as it is.
 
+**Say "field set", not "block".** Same rule as Step 2, and it applies to the hand-over
+in full: "1 title, 2 contributors…" needs no noun at all, but where one is needed it is
+*field set*. `block` stays inside the spec, the builder output and this file.
+
 **Professional means a colleague's register, not a service voice.** Plain declarative
 sentences about the work. No greeting, no sign-off, no "Great question", no "Happy to
 help", no "I hope this helps", no congratulating them on the batch, no exclamation
@@ -437,8 +492,14 @@ Concretely:
   guarantees" below goes in unprompted — it is there so you can answer questions, not
   so you can pre-empt them.
 - Raise a caveat only if it applies to *this* file. A pre-filled workbook doesn't need
-  the fill-down instruction; a batch with no diacritics doesn't need the CSV encoding
-  warning spelled out.
+  the fill-down instruction.
+- **No export or download instructions.** Don't tell them to select the `metadata` tab,
+  don't tell them which CSV format to use, don't describe getting the file out of
+  Sheets. That comes long after the hand-over, the workbook's own `Instructions` tab
+  carries it, and the README repeats it — putting it in the reply pushes a step they
+  cannot take yet ahead of the one they can. Answer it if they ask.
+- **Don't say the SDR load requires resource type, or that any block is required by it.**
+  `title` is required by the builder, and that is the only requirement to state.
 - **Never lead with the state of the vocabulary tabs.** They hold example rows by
   design and the team fills them in; saying "the role tab only has author" reads as a
   fault report about their own template. If the batch obviously needs terms they'll
@@ -456,16 +517,13 @@ Built: example_batch.xlsx — 110 columns.
 information, admin metadata. Left out: form/genre, language, note, identifier,
 related resource, geographic.
 
-You asked for 2 access blocks; access can't repeat, so there's one. Its headers
-carry no instance number, and a second copy would collide.
+You asked for 2 access field sets; access can't repeat, so there's one. Its
+headers carry no instance number, and a second copy would collide.
 
-Worth adding: form/genre, which is where resource type lives. I left it out
-since you didn't ask, but say the word and I'll rebuild.
+Worth considering: form/genre, which holds resource type, genre, extent and
+media type. I left it out since you didn't ask — say the word and I'll rebuild.
 
-Formulas are on row 4 — fill down to your 40 rows. Once the metadata is entered
-and you're ready to export, select the metadata tab and use CSV UTF-8, not plain
-CSV; both traps produce a bad load rather than an error. The Instructions tab has
-the detail.
+Formulas are on row 4 — fill down to your 40 rows.
 
 File at: `C:\Users\arcadia\Documents\example_batch.xlsx`
 ```
@@ -473,8 +531,18 @@ File at: `C:\Users\arcadia\Documents\example_batch.xlsx`
 That is the ceiling, not the target. Cut anything that doesn't apply — except the
 `File at:` line, which always stays. The filename, counts and caveats above are an
 invented scenario chosen to exercise every part of the shape; take the wording, never
-the content. In particular the "you asked for 2 access blocks" line only belongs in a
-reply where they actually did.
+the content. In particular the "you asked for 2 access field sets" line only belongs in
+a reply where they actually did.
+
+**The fill-down number is how many objects they said they have**, not the row count in
+the file. "40 rows" above is the batch in that invented scenario. A workbook with no
+object list carries the template's 998 blank rows whatever the batch size, so "fill down
+to your 998 rows" tells someone with 15 maps to fill down 983 rows they will never use —
+and it reads as a fact about their batch, which it isn't. If they never said a number,
+drop it: "Formulas are on row 4 — fill down as far as you need." If their list was
+pre-filled, the line goes altogether; the rows already have their formulas, and the
+spare row past the last object is worth one clause instead: "row 44 is empty and set up
+— fill down from it, not from row 43, if you add more objects."
 
 **Always end with the workbook's full path, labelled `File at:`, in a code span.** Not a
 markdown link — a plain path:
@@ -508,31 +576,26 @@ second is real inside WSL and meaningless to their file manager; translate it to
 If a future client does render working file links, this is the paragraph to revisit —
 re-test it rather than assuming, since the failure mode is a link that looks fine.
 
-Three things are worth a line when they apply, because each one otherwise produces a
-bad load or a wasted rebuild:
+Two things are worth a line when they apply:
 
-- **Export traps.** A CSV holds one sheet and takes the active one, and a fresh
-  workbook opens on `Instructions`; and in Excel the format must be `CSV UTF-8 (Comma
-  delimited)`, since plain CSV writes `é` as the cp1252 byte `E9` and corrupts every
-  diacritic silently. One sentence covers both — the Instructions tab carries the
-  detail, and the Sheets route sidesteps them.
-
-  **Place it in time: the export happens after the metadata is entered**, not on
-  receiving the file. Write "once the metadata is entered and you're ready to export"
-  or "when the metadata is complete", never a bare "before exporting, do X" — handed a
-  brand-new empty workbook, that reads as a step to take now, and someone who
-  follows it exports 998 blank rows. The order is: fill the sheet in, then export, then
-  load in Argo.
-- **A rebuild is a new file**, not something mergeable into a copy that already has metadata in it.
-  Say it when a count is uncertain or you are recommending a block.
+- **A rebuild is a new file**, not something mergeable into a copy that already has
+  metadata in it. Say it when a count is uncertain or you are suggesting a field set.
 - **A fresh workbook looks emptier than people expect**, because the computed columns
   derive from what is typed. Worth a clause if they might read it as a broken file.
 
-Answer these if asked, but don't volunteer them: dates are Text-formatted so `1923`,
-`circa 1923`, `192-` and open ranges survive verbatim (Text does not reorder
-`06/04/1923`); the workbook has been checked in Google Sheets as well as Excel, and if
-a date converts there anyway the fix is Format → Number → Plain text; and creating metadata
-in either Sheets or Excel is supported, so don't write instructions that fit only one.
+Answer these if asked, but never volunteer them:
+
+- **Exporting.** A CSV holds one sheet and takes the active one, and a fresh workbook
+  opens on `Instructions`; in Excel the format must be `CSV UTF-8 (Comma delimited)`,
+  since plain CSV writes `é` as the cp1252 byte `E9` and corrupts every diacritic
+  silently. The Sheets route sidesteps both. This is real and it matters — it is just
+  not hand-over material, because it belongs to a day that hasn't happened yet.
+- **Dates** are Text-formatted, so `1923`, `circa 1923`, `192-` and open ranges survive
+  verbatim, and Text does not reorder `06/04/1923`. The workbook has been checked in
+  Google Sheets as well as Excel; if a date converts there anyway, the fix is
+  Format → Number → Plain text.
+- **Either tool works.** Creating metadata in Sheets or in Excel is supported, so don't
+  write instructions that fit only one.
 
 ## Answering questions about the output
 
