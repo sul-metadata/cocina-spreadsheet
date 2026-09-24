@@ -196,7 +196,10 @@ def read_seed_data(path):
     """
     ext = os.path.splitext(path)[1].lower()
     rows = []
-    if ext in (".csv", ".tsv", ".txt"):
+    # .txt used to be accepted here and was never documented: a prose file
+    # dropped in got sniffed for a delimiter and its first line became an
+    # object, druid and all. Refusing it is the less surprising failure.
+    if ext in (".csv", ".tsv"):
         import csv
         with open(path, newline="", encoding="utf-8-sig") as fh:
             sample = fh.read(8192)
@@ -463,9 +466,10 @@ class Template(object):
             raise BuildError(
                 "The template's metadata sheet does not match the expected layout:\n"
                 + "\n".join(bad)
-                + "\n\nThe block column ranges in BLOCK_DEFS were derived from the "
+                + "\n\nThe column ranges in BLOCK_DEFS were derived from the "
                   "original template. Recheck them against the new template before "
-                  "building, otherwise blocks will be copied from the wrong columns."
+                  "building, otherwise field sets will be copied from the wrong "
+                  "columns."
             )
 
     def stride(self, block):
@@ -535,8 +539,8 @@ def instance_columns(tpl, block, number):
             col = tpl.column_of(header)
             if col is None:
                 raise BuildError(
-                    "The %s block expects a %r column for repeated instances, "
-                    "but the template has no such header. It is appended past "
+                    "The %s field set expects a %r column for repeated "
+                    "instances, but the template has no such header. It is appended past "
                     "the end of the sheet; if the template was rebuilt it may "
                     "have been dropped." % (block["key"], header))
             cols.append(col)
@@ -684,7 +688,8 @@ def rewrite_formula(formula, colmap, where):
                 if src not in colmap:
                     raise BuildError(
                         "Formula in %s references column %s, which is not part of "
-                        "that block instance. The block ranges may be wrong.\n"
+                        "that field set instance. The column ranges in BLOCK_DEFS "
+                        "may be wrong.\n"
                         "  formula: %s" % (where, src, formula)
                     )
                 out.append("%s%s%s%s" % (m.group(1), colmap[src], m.group(3), m.group(4)))
@@ -732,13 +737,13 @@ def normalize_spec(spec):
         if isinstance(entry, str):
             entry = {"type": entry}
         if not isinstance(entry, dict) or "type" not in entry:
-            raise BuildError("Each block entry needs a \"type\": %r" % (entry,))
+            raise BuildError("Each entry in \"blocks\" needs a \"type\": %r" % (entry,))
 
         raw = str(entry["type"]).strip()
         key = raw if raw in BLOCK_BY_KEY else ALIASES.get(raw.lower())
         if key is None:
             raise BuildError(
-                "Unknown block type %r. Valid types: %s"
+                "Unknown field set type %r. Valid types: %s"
                 % (raw, ", ".join(b["key"] for b in BLOCK_DEFS))
             )
 
@@ -750,13 +755,13 @@ def normalize_spec(spec):
             raise BuildError("Count for %s must be a whole number, got %r" % (key, count))
         if count < 1:
             raise BuildError(
-                "Count for %s must be at least 1. To leave a block out, omit it "
-                "from the spec entirely." % key
+                "Count for %s must be at least 1. To leave a field set out, omit "
+                "it from the spec entirely." % key
             )
         if not block["repeatable"] and count != 1:
             raise BuildError(
-                "The %s block cannot repeat - it appears at most once, and its "
-                "headers carry no instance number." % key
+                "The %s field set cannot repeat - it appears at most once, and "
+                "its headers carry no instance number." % key
             )
         if key in seen:
             raise BuildError(
@@ -777,7 +782,7 @@ def normalize_spec(spec):
                 owner = next(b["key"] for b in BLOCK_DEFS
                              if "child" in b and CHILD_FIELD(b["child"]) == other)
                 raise BuildError(
-                    "%r only applies to the %s block, not %s."
+                    "%r only applies to the %s field set, not %s."
                     % (other, owner, key))
 
         if child:
@@ -801,11 +806,12 @@ def normalize_spec(spec):
     for block in BLOCK_DEFS:
         if block.get("required") and block["key"] not in seen:
             raise BuildError(
-                "The %s block is required and must appear in the spec. Every object "
-                "needs a title, and the adminMetadata formulas key off the title "
-                "block's \"Main title\" entry cell, so the sheet does not work "
-                "without it. This is about the columns, not the content - the cells "
-                "ship empty and the cataloguer types the title in Excel."
+                "The %s field set is required and must appear in the spec. Every "
+                "object needs a title, and the adminMetadata formulas key off the "
+                "title field set's \"Main title\" entry cell, so the sheet does not "
+                "work without it. This is about the columns, not the content - the "
+                "cells ship empty and the title is typed in when the metadata is "
+                "created."
                 % block["key"]
             )
 
@@ -967,7 +973,7 @@ def generate_sheet(tpl, instances, total_cols, data_rows, seed=None):
         if len(entry) != 1:
             raise BuildError(
                 "Expected exactly one title column with no row-3 header to put "
-                "the title in; found %d (%s). The template's title block has "
+                "the title in; found %d (%s). The template's title field set has "
                 "changed shape." % (len(entry), ", ".join(entry) or "none"))
         seed_cols = {"druid": prefix.map["A"],
                      "source_id": prefix.map["B"],
@@ -1164,7 +1170,7 @@ def summarize(tpl, instances):
 
 
 def list_blocks(tpl):
-    print("Blocks available in the bundled template:\n")
+    print("Field sets available in the bundled template:\n")
     print("  %-16s %-9s %-8s %s" % ("type", "columns", "repeats", "first header"))
     print("  " + "-" * 62)
     for b in BLOCK_DEFS:
@@ -1181,7 +1187,7 @@ def list_blocks(tpl):
             print("  %-16s %-9s %-8s %s"
                   % ("  " + c["key"], "%s-%s" % (c["first"], c["last"]),
                      "nested", tpl.header(c["first"]) or ""))
-    print("\n  The form block holds form1..form8, so each extra instance starts at")
+    print("\n  The form field set holds form1..form8, so each extra instance starts at")
     print("  form9, form17, ... Access and adminMetadata appear at most once.")
     print("  Title is required: adminMetadata's formulas key off its Main title cell.")
     print("  adminMetadata is added automatically and always sits last.")
