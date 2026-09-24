@@ -48,13 +48,19 @@ Ask for the blocks they want and how many of each. Blocks they don't mention are
 out of the workbook entirely, so it's worth confirming omissions rather than assuming
 them.
 
-**Never add a block they didn't ask for — recommend it instead.** If a block looks
-necessary (a batch with no `form` block carries no resource type, which the SDR load
-wants), say so and let them decide, rather than putting it in and noting it afterwards.
-The reasoning that makes adding it tempting — an unused block loads as nothing, while a
-missing one means a rebuild — is real, and it is an argument for *raising* the block in
-Step 2, not for widening the spec yourself. What they asked for is the spec; a column
-they never agreed to is a column someone has to be told to ignore.
+**Never add a block they didn't ask for — suggest it instead.** If a block looks like
+something the batch will want, say so and let them decide, rather than putting it in and
+noting it afterwards. The reasoning that makes adding it tempting — an unused block
+loads as nothing, while a missing one means a rebuild — is real, and it is an argument
+for *raising* the block in Step 2, not for widening the spec yourself. What they asked
+for is the spec; a column they never agreed to is a column someone has to be told to
+ignore.
+
+**Suggest, don't insist, and don't invent a requirement.** `form` is the usual candidate
+— it holds resource type, genre, extent and media type, which many batches want — so
+naming it when it's missing is useful. But it is not required: say "worth considering",
+not "the load needs it". The only requirement to state is `title`, which the builder
+itself rejects a spec without.
 
 Two blocks are not the caller's choice. `title` is required — every object needs one,
 so ask how many titles rather than whether they want any, and the builder rejects a
@@ -140,13 +146,35 @@ Leaving out: form/genre, origin info, language, note, identifier, related resour
 | question | options |
 |---|---|
 | Build these blocks, or choose Other to describe changes? | `Build as listed` · one concrete amendment, e.g. `Add origin info` |
-| Which folder? | `Desktop` · `Documents` |
-| Filename? | `cocina_spreadsheet.xlsx` · `project_workbook.xlsx` |
-| Pre-fill the rows? | `Build it empty` · `I'll upload a list` |
+| Which folder should it go in? | `Desktop` · `Documents` |
+| What should the file be called? | `cocina_spreadsheet.xlsx` · `project_workbook.xlsx` |
+| Pre-fill the rows from a list of objects? | `Build it empty` · `I'll upload a list` |
 
-Keep the labels that short — they are buttons, not sentences; the reasoning goes in each
-option's description. If they pick `I want changes` or `I'll upload a list`, the next
-message is theirs: the correction, or the uploaded file.
+**Labels stay short, but never leave them to speak for themselves.** They are buttons;
+the person reading them may not know this template, so each one needs a description
+saying *what happens if they pick it*, in concrete terms:
+
+- `Desktop` → "C:\Users\arcadia\Desktop — the file will be sitting there when you
+  switch windows."
+- `cocina_spreadsheet.xlsx` → "The full path would be
+  C:\Users\arcadia\Desktop\cocina_spreadsheet.xlsx."
+- `Build it empty` → "Formulas on row 4, ready to fill down. You type the druids and
+  titles yourself."
+- `I'll upload a list` → "Upload a .csv, .tsv or .xlsx with druid, source ID and title
+  in the first three columns. Each object gets a row with its formulas already filled
+  down, so no identifier is typed by hand."
+- `Build as listed` → restate the shape in one line — "1 title, 2 contributors with one
+  role each, 3 subjects, access information, admin metadata; about 110 columns."
+
+**Describe the consequence, don't recommend the choice.** "Formulas on row 4, ready to
+fill down" is context; "probably what you want" is advice. The distinction matters most
+on the filename, where there is nothing to recommend and the useful description is
+simply the resulting path.
+
+Put the same care into the question text. "Which folder?" assumes they know why they're
+being asked; "Which folder should it go in?" with the paths in the descriptions tells
+them what the answer decides. If they pick the amendment option or `I'll upload a list`,
+the next message is theirs: the correction, or the uploaded file.
 
 **Folder and filename are separate questions.** Each has two real options, so neither
 needs padding: `Desktop` or `Documents` for the folder, `cocina_spreadsheet.xlsx` or
@@ -238,12 +266,12 @@ been handed nothing.
   choose when they haven't; it is not a veto over what they ask for.
 - **Filename: offer `cocina_spreadsheet.xlsx` and `project_workbook.xlsx`, with no
   advice about which to pick.** Naming is theirs. Don't explain when each one fits,
-  don't suggest a name from the batch they described, and don't comment on their
-  choice once they've made it — someone who ends up with several of these may want
-  `sierra_club_photos.xlsx`, and "Other" is where that goes. Keep each option's
-  description factual, or leave it at naming the default; a recommendation in a button
-  is noise. If they give a name without `.xlsx`, or with a different extension, replace
-  it with `.xlsx`.
+  don't suggest a name from the batch they described, and don't comment on their choice
+  once they've made it — someone who ends up with several of these may want
+  `sierra_club_photos.xlsx`, and "Other" is where that goes. Each option still needs a
+  description, but the useful one is the resulting full path, not a reason to prefer it.
+  If they give a name without `.xlsx`, or with a different extension, replace it with
+  `.xlsx`.
 - Write Windows paths with backslashes here, the same form Step 6 shows in the `File at:`
   line, so the path you confirm and the path they end up with read identically.
 
@@ -437,8 +465,14 @@ Concretely:
   guarantees" below goes in unprompted — it is there so you can answer questions, not
   so you can pre-empt them.
 - Raise a caveat only if it applies to *this* file. A pre-filled workbook doesn't need
-  the fill-down instruction; a batch with no diacritics doesn't need the CSV encoding
-  warning spelled out.
+  the fill-down instruction.
+- **No export or download instructions.** Don't tell them to select the `metadata` tab,
+  don't tell them which CSV format to use, don't describe getting the file out of
+  Sheets. That comes long after the hand-over, the workbook's own `Instructions` tab
+  carries it, and the README repeats it — putting it in the reply pushes a step they
+  cannot take yet ahead of the one they can. Answer it if they ask.
+- **Don't say the SDR load requires resource type, or that any block is required by it.**
+  `title` is required by the builder, and that is the only requirement to state.
 - **Never lead with the state of the vocabulary tabs.** They hold example rows by
   design and the team fills them in; saying "the role tab only has author" reads as a
   fault report about their own template. If the batch obviously needs terms they'll
@@ -459,13 +493,10 @@ related resource, geographic.
 You asked for 2 access blocks; access can't repeat, so there's one. Its headers
 carry no instance number, and a second copy would collide.
 
-Worth adding: form/genre, which is where resource type lives. I left it out
-since you didn't ask, but say the word and I'll rebuild.
+Worth considering: form/genre, which holds resource type, genre, extent and
+media type. I left it out since you didn't ask — say the word and I'll rebuild.
 
-Formulas are on row 4 — fill down to your 40 rows. Once the metadata is entered
-and you're ready to export, select the metadata tab and use CSV UTF-8, not plain
-CSV; both traps produce a bad load rather than an error. The Instructions tab has
-the detail.
+Formulas are on row 4 — fill down to your 40 rows.
 
 File at: `C:\Users\arcadia\Documents\example_batch.xlsx`
 ```
@@ -508,31 +539,26 @@ second is real inside WSL and meaningless to their file manager; translate it to
 If a future client does render working file links, this is the paragraph to revisit —
 re-test it rather than assuming, since the failure mode is a link that looks fine.
 
-Three things are worth a line when they apply, because each one otherwise produces a
-bad load or a wasted rebuild:
+Two things are worth a line when they apply:
 
-- **Export traps.** A CSV holds one sheet and takes the active one, and a fresh
-  workbook opens on `Instructions`; and in Excel the format must be `CSV UTF-8 (Comma
-  delimited)`, since plain CSV writes `é` as the cp1252 byte `E9` and corrupts every
-  diacritic silently. One sentence covers both — the Instructions tab carries the
-  detail, and the Sheets route sidesteps them.
-
-  **Place it in time: the export happens after the metadata is entered**, not on
-  receiving the file. Write "once the metadata is entered and you're ready to export"
-  or "when the metadata is complete", never a bare "before exporting, do X" — handed a
-  brand-new empty workbook, that reads as a step to take now, and someone who
-  follows it exports 998 blank rows. The order is: fill the sheet in, then export, then
-  load in Argo.
-- **A rebuild is a new file**, not something mergeable into a copy that already has metadata in it.
-  Say it when a count is uncertain or you are recommending a block.
+- **A rebuild is a new file**, not something mergeable into a copy that already has
+  metadata in it. Say it when a count is uncertain or you are suggesting a block.
 - **A fresh workbook looks emptier than people expect**, because the computed columns
   derive from what is typed. Worth a clause if they might read it as a broken file.
 
-Answer these if asked, but don't volunteer them: dates are Text-formatted so `1923`,
-`circa 1923`, `192-` and open ranges survive verbatim (Text does not reorder
-`06/04/1923`); the workbook has been checked in Google Sheets as well as Excel, and if
-a date converts there anyway the fix is Format → Number → Plain text; and creating metadata
-in either Sheets or Excel is supported, so don't write instructions that fit only one.
+Answer these if asked, but never volunteer them:
+
+- **Exporting.** A CSV holds one sheet and takes the active one, and a fresh workbook
+  opens on `Instructions`; in Excel the format must be `CSV UTF-8 (Comma delimited)`,
+  since plain CSV writes `é` as the cp1252 byte `E9` and corrupts every diacritic
+  silently. The Sheets route sidesteps both. This is real and it matters — it is just
+  not hand-over material, because it belongs to a day that hasn't happened yet.
+- **Dates** are Text-formatted, so `1923`, `circa 1923`, `192-` and open ranges survive
+  verbatim, and Text does not reorder `06/04/1923`. The workbook has been checked in
+  Google Sheets as well as Excel; if a date converts there anyway, the fix is
+  Format → Number → Plain text.
+- **Either tool works.** Creating metadata in Sheets or in Excel is supported, so don't
+  write instructions that fit only one.
 
 ## Answering questions about the output
 
