@@ -24,8 +24,11 @@ Download and install Claude for Education Standard from
 [https://uit.stanford.edu/service/claude](https://uit.stanford.edu/service/claude).
 Make sure the toggle at the top left is set to "Code."
 
-Copy the whole `cocina-spreadsheet` folder into your Claude skills directory
-`~/.claude/skills/` (on Windows, `C:\Users\<you>\.claude\skills\`). Keep the internal
+Download the skill from GitHub. Click on the green **Code** button at the upper right
+of the file pane and select **Download ZIP**. Right click on the downloaded file and
+use 7Zip or another utility to extract the files. Create a `cocina-spreadsheet` folder
+in your Claude skills directory `~/.claude/skills/` (on Windows,
+`C:\Users\<you>\.claude\skills\`). Copy the downloaded files there. Keep the internal
 layout intact; the builder finds the template relative to its own location.
 
 **Requirements: Python 3.** The builder uses only the standard Python library. You don't
@@ -49,6 +52,8 @@ is named exactly `cocina-spreadsheet` with `SKILL.md` at its top level.
 ---
 
 ## How to use it
+
+**As the skill runs, click "Allow once" when prompted.**
 
 You can formally list your template requirements:
 
@@ -78,15 +83,15 @@ cc234de5678,sierra_club_002,Vernal Fall in spring
 Columns are read by position, not by name; a heading row is detected and skipped; blank
 rows are dropped. Formulas and drop-downs are automatically filled down for all entries.
 
-**As the skill runs, click "Allow once" when prompted.**
-
 ---
 
 ## Creating metadata and exporting
 
-The workbook may be uploaded to Google Sheets or used directly in Excel.
+The workbook may be uploaded to Google Sheets or used directly in Excel. If you did not upload a title list, only the fourth row contains formulas and drop-downs - **fill down this row to the maximum number of rows you think you might need before beginning to enter metadata.** If you need to fill down more rows, do so before completing the last formula row - that way you will fill down only the formulas and drop-downs, not entered metadata. If you fill down more rows than you need, it isn't a problem - rows without a
+druid will be ignored when uploading to Argo.
 
-**Google Sheets** — upload the `.xlsx` to Drive and open with Sheets, then when done
+
+**Google Sheets** — upload the `.xlsx` to Drive and open with Sheets. When you are done creating metadata,
 export with File → Download → Comma Separated Values. Don't open the downloaded CSV in
 Excel; that may change the encoding and date formatting.
 
@@ -110,9 +115,7 @@ The vocabulary tabs have example entries given. Replace these with your project
 vocabulary as needed. You can add up to 1000 rows on each list.
 
 The `metadata` sheet has three header rows — block label, field label, Cocina header —
-then a row containing formulas and drop-downs. Fill down this row to the maximum number
-of rows you think you might need before beginning to enter metadata. Rows without a
-druid will be ignored when uploading to Argo.
+then the row containing formulas and drop-downs.
 
 ---
 
