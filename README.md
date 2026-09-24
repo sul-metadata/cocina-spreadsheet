@@ -4,10 +4,10 @@ This skill builds a custom Cocina metadata spreadsheet template, with field repe
 determined by the given specifications.
 
 The template contains field headers, autofill formulas, and drop-down menus based on
-tabs for authority control. Repeats are added based on blocks of fields, as described
+tabs for authority control. Repeats are added based on sets of fields, as described
 below — so requesting two contributors adds fields for the associated URIs, roles, etc.
-Blocks not requested will be omitted. The druid, source ID, purl, and adminMetadata are
-included automatically and do not need to be requested.
+Field sets not requested will be omitted. The druid, source ID, purl, and adminMetadata
+are included automatically and do not need to be requested.
 
 An option is also available to upload a file listing druids, source IDs, and titles,
 which will pre-populate those fields in the spreadsheet. Formulas and drop-downs will be
@@ -121,7 +121,7 @@ six vocabulary tabs (`contributor`, `role`, `resource type`, `genre`, `language`
 The vocabulary tabs have example entries given. Replace these with your project
 vocabulary as needed. You can add up to 1000 rows on each list.
 
-The `metadata` sheet has three header rows — block label, field label, Cocina header —
+The `metadata` sheet has three header rows — field set label, field label, Cocina header —
 then the row containing formulas and drop-downs.
 
 ---
@@ -133,7 +133,7 @@ mention are omitted from the template, except for `title` and `adminMetadata`, w
 are always included. Counts for contributor `roles` and form `notes` may be specified
 separately from their parent properties.
 
-| block | what it covers | repeats |
+| field set | what it covers | repeats |
 |---|---|---|
 | `title` | main title, subtitle, part number/name, nonsorting article | yes — **required** |
 | `contributor` | name, type, authority URIs, plus one or more nested `role`s | yes |
@@ -149,16 +149,16 @@ separately from their parent properties.
 | `adminMetadata` | cataloguing agency and language | **automatically added** |
 
 `title` is required for every object, and the `adminMetadata` formulas key off its
-main-title cell. `references/blocks.md` lists every column of every block.
+main-title cell. `references/blocks.md` lists every column of every field set.
 
 Three things to be aware of:
 
 - **`form` holds multiple numbered entries** (`form1`..`form8`) covering resource type,
-  genre, extent, etc., the last being the form note. If a second form block is added, it
-  starts at `form9`.
-- **"Note" means two things.** A form note lives inside a `form` block (`notes`); a
-  general note on the object is the standalone `note` block.
-- **A date range needs one `event` block, not two.** It already has a date column and
+  genre, extent, etc., the last being the form note. If a second form field set is
+  added, it starts at `form9`.
+- **"Note" means two things.** A form note lives inside a `form` field set (`notes`); a
+  general note on the object is the standalone `note` field set.
+- **A date range needs one `event` field set, not two.** It already has a date column and
   an "End date if range" column beside it.
 
 ---
@@ -173,12 +173,17 @@ Three things to be aware of:
 | A date turned into a number | the column lost its Text format — in Sheets, Format → Number → Plain text; in Excel, Format Cells → Text |
 | A drop-down missing after import | the vocabulary tabs are still there, so the term can be typed; the derived columns key off the cell text, not the drop-down |
 | Claude doesn't pick the skill up | check the folder name, and that `SKILL.md` is at its top level |
-| `error: The <x> block cannot repeat` | `access` and `adminMetadata` appear at most once; their headers carry no instance number, so a copy would duplicate headers |
-| `error: The title block is required` | add a `title` block; this is about the columns, not the text |
-| `error: Unknown block type 'x'` | check the spelling against `--list-blocks` |
+| `error: The <x> field set cannot repeat` | `access` and `adminMetadata` appear at most once; their headers carry no instance number, so a copy would duplicate headers |
+| `error: The title field set is required` | add a `title` field set; this is about the columns, not the text |
+| `error: Unknown field set type 'x'` | check the spelling against `--list-blocks` |
 | `error: "roles" for contributor has N entries but count is M` | give one role count per contributor; likewise `"notes"` and `form` |
-| `error: "notes" only applies to the form block` | `notes` nests inside `form`; for general notes, add a standalone `note` block |
-| `error: ...does not match the expected layout` | the template in `assets/` has been changed in a way that moves the blocks |
+| `error: "notes" only applies to the form field set` | `notes` nests inside `form`; for general notes, add a standalone `note` field set |
+| `error: ...does not match the expected layout` | the template in `assets/` has been changed in a way that moves the field sets |
+| `error: <file> has no data rows` | the uploaded list is empty, or every row in it is blank |
+| `error: <file> has a heading row but no data under it` | the uploaded list has column headings and nothing below them |
+| `error: Don't know how to read '<file>'` | save the list as `.csv`, `.tsv` or `.xlsx`; `.xls` and other formats are not read |
+| `error: Data file not found: <path>` | upload the list rather than naming a path, or check the path is the one Claude was given |
+| `error: That spec needs N columns; Excel's limit is 16384` | the counts asked for more columns than a sheet can hold; reduce them |
 
 ---
 
@@ -186,9 +191,9 @@ Three things to be aware of:
 
 `assets/cocina_spreadsheet.xlsx` is what every build starts from; edit it and every
 future workbook inherits the change. The builder checks a fingerprint of its layout
-and refuses to run if the blocks have moved, rather than copying the wrong columns.
+and refuses to run if the columns have changed, rather than copying the wrong columns.
 **Editing cell text, formulas, styles or the vocabulary tabs is safe; inserting or
-deleting columns in the `metadata` sheet needs the block ranges in
+deleting columns in the `metadata` sheet needs the field set ranges in
 `scripts/build_spreadsheet.py` updated to match.** You may add additional instructional
 text to the column labels (not the coded headers), color-code columns, or prepopulate
 tabs and they will be picked up as defaults when generating new templates.
