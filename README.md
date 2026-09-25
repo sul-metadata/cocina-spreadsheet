@@ -23,29 +23,28 @@ Google Sheets.
 **Get a Stanford license for Claude for Education Standard** from
 [https://uit.stanford.edu/service/claude](https://uit.stanford.edu/service/claude).
 
-**Download and install the Claude desktop app.** Open it and make sure the toggle at the
-top left is set to "Code."
+**Download and install the Claude desktop app** from
+[https://claude.com/download](https://claude.com/download).
 
-**Download the cocina-spreadsheet skill from GitHub.** Click on the green **Code** button
-at the upper right of the file pane and select **Download ZIP**. Right click on the
-downloaded file and use 7Zip or another utility to extract the files. Create a
-`cocina-spreadsheet` folder in your Claude skills directory `~/.claude/skills/` (on
-Windows, `C:\Users\<you>\.claude\skills\`). Copy the downloaded files there. Keep the
-internal layout intact; the builder finds the template relative to its own location.
+**Download the cocina-spreadsheet skill from GitHub** at
+[https://github.com/sul-metadata/cocina-spreadsheet](https://github.com/sul-metadata/cocina-spreadsheet).
+Click on the green **Code** button at the upper right of the file pane and select
+**Download ZIP**.
 
-**Python 3 is required.** The skill will check for a Python installation, or you can
-check yourself via the command line. If `python --version` fails or prints "Python was
-not found", you don't have it. Install from
-[python.org/downloads](https://www.python.org/downloads/) (tick
+**Add the skill to Claude.** Click on your name at the lower left of the screen and
+select **Settings**. Go to **Skills**, click **Add**, and select **Upload skill**. Drag
+and drop the zip file you downloaded from GitHub into the window.
+
+**Start the skill.** Start a new session and in the chat box, type
+`/cocina-spreadsheet`. Claude should recognize the skill.
+
+**Python 3 is required.** The skill will check whether Python is installed on your
+computer. If it is not, you can install it via
+[https://python.org/downloads](https://www.python.org/downloads/) (tick
 **Add python.exe to PATH**), `brew install python` on macOS, or
-`sudo apt install -y python3` on Linux. If Python still reports that it is not
-present, Windows may be shadowing it: turn that off under Settings → Apps → Advanced
-app settings → App execution aliases.
-
-To check the install, start a new Claude session and type `/cocina-spreadsheet`.
-Claude should pick up the skill automatically. If it doesn't, check that the folder
-containing the skill is named exactly `cocina-spreadsheet` with `SKILL.md` at its top
-level.
+`sudo apt install -y python3` on Linux. If Claude still can't find Python, Windows may
+be shadowing it: turn that off under Settings → Apps → Advanced app settings → App
+execution aliases.
 
 ---
 
