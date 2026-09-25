@@ -11,7 +11,13 @@ Worth knowing, so you can answer questions about the output without re-deriving 
 - **Headers renumber on the first segment.** `contributor1.name1.value` becomes
   `contributor2.name1.value` — the `name1` inside is untouched. A nested child renumbers
   its own segment against its parent: `contributor2.role3.value` for the third role of
-  the second contributor, `form16.note2.value` for the second note of the second form.
+  the second contributor, `form8.note2.value` for the second note of the second
+  technical-details field set when it stands alone.
+- **The two form field sets share one numbering.** `form` and `technicalDetails` each
+  take four numbers per instance, in column order, so `form1`..`form8` for one of each,
+  `form1`..`form4` for either alone, and no gap or repeat however they are combined.
+  `technicalDetails` renumbers down from the template's `form5` when nothing precedes
+  it.
 - **Dropdowns follow their block**, still pointing at the right lookup sheet, and
   their ranges are fully absolute (`role!$A$2:$A$1002`) so filling row 4 down leaves
   every list pointing at the same vocabulary rows. Before 2026-09-21 the row numbers

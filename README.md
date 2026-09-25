@@ -20,35 +20,32 @@ Google Sheets.
 
 ## Installing the skill
 
-Get a Stanford license for Claude for Education Standard from
+**Get a Stanford license for Claude for Education Standard** from
 [https://uit.stanford.edu/service/claude](https://uit.stanford.edu/service/claude).
-Download and install the Claude desktop app. Open it and make sure the toggle at the
+
+**Download and install the Claude desktop app.** Open it and make sure the toggle at the
 top left is set to "Code."
 
-Download the cocina-spreadsheet skill from GitHub. Click on the green **Code** button
+**Download the cocina-spreadsheet skill from GitHub.** Click on the green **Code** button
 at the upper right of the file pane and select **Download ZIP**. Right click on the
 downloaded file and use 7Zip or another utility to extract the files. Create a
 `cocina-spreadsheet` folder in your Claude skills directory `~/.claude/skills/` (on
 Windows, `C:\Users\<you>\.claude\skills\`). Copy the downloaded files there. Keep the
 internal layout intact; the builder finds the template relative to its own location.
 
-**Requirements: Python 3.** The builder uses only the standard Python library. You don't
-need Excel or a Google account to build a workbook, only to fill one in.
-
-The skill will check for a Python installation, or you can check yourself via the
-command line. If `python --version` fails or prints "Python was not found", you don't
-have it. Install from [python.org/downloads](https://www.python.org/downloads/) (tick
+**Python 3 is required.** The skill will check for a Python installation, or you can
+check yourself via the command line. If `python --version` fails or prints "Python was
+not found", you don't have it. Install from
+[python.org/downloads](https://www.python.org/downloads/) (tick
 **Add python.exe to PATH**), `brew install python` on macOS, or
 `sudo apt install -y python3` on Linux. If Python still reports that it is not
 present, Windows may be shadowing it: turn that off under Settings → Apps → Advanced
 app settings → App execution aliases.
 
-To check the install, start a new Claude session and ask for something the skill covers:
-
-> Build me a Cocina spreadsheet with a title, two contributors, and three subjects.
-
-Claude should pick the skill up without being told to. If it doesn't, check the folder
-is named exactly `cocina-spreadsheet` with `SKILL.md` at its top level.
+To check the install, start a new Claude session and type `/cocina-spreadsheet`.
+Claude should pick up the skill automatically. If it doesn't, check that the folder
+containing the skill is named exactly `cocina-spreadsheet` with `SKILL.md` at its top
+level.
 
 ---
 
@@ -132,19 +129,21 @@ then the row containing formulas and drop-downs.
 
 If no number is mentioned, the field type `count` defaults to 1. Field types you do not
 mention are omitted from the template, except for `title` and `adminMetadata`, which
-are always included. Counts for contributor `roles` and form `notes` may be specified
-separately from their parent properties.
+are always included. Counts for contributor `roles` and form `notes` in technical
+details may be specified separately from their parent properties: for example,
+1 contributor with 2 roles.
 
 | field set | what it covers | repeats |
 |---|---|---|
 | `title` | main title, subtitle, part number/name, nonsorting article | yes — **required** |
 | `contributor` | name, type, authority URIs, plus one or more nested `role`s | yes |
-| `form` | resource type, form, extent, genre, digital origin, media type, plus one or more nested form `note`s | yes |
+| `form` | "Form/Genre": general resource type, form, extent, genre | yes |
+| `technicalDetails` | "Technical details": reformatting quality, digital origin, internet media type, plus one or more nested form `note`s | yes |
 | `event` | "Origin info": date, end-date-if-range, place, publisher | yes |
 | `language` | language, code, URI, authority | yes |
 | `note` | note, type, display label | yes |
 | `identifier` | identifier, type, display label | yes |
-| `subject` | one heading per subject, type, URI, authority | yes |
+| `subject` | subject term, type, URI, authority | yes |
 | `multipartSubject` | two-part structured heading, type, URI, authority | yes |
 | `relatedResource` | type, title, PURL, other URL, abstract | yes |
 | `geographic` | MIME type, point coordinates, bounding box | yes |
@@ -156,16 +155,17 @@ main-title cell. `references/blocks.md` lists every column of every field set.
 
 Some things to be aware of:
 
-- **`form` holds multiple numbered entries** (`form1`..`form8`) covering resource type,
-  genre, extent, etc., the last being the form note. If a second form field set is
-  added, it starts at `form9`.
-- **"Note" means two things.** A form note lives inside a `form` field set (`notes`); a
-  general note on the object is the standalone `note` field set.
+- **Form entries come in two field sets.** Ask for "form" or "genre" and you get
+  `form`; ask for "technical details" and you get `technicalDetails`. You can have
+  either or both. Their headers number `form1`, `form2`, … straight through whichever
+  you include, so neither leaves a gap in the numbering.
+- **"Note" means two things.** A form note lives inside a `technicalDetails` field set
+  (`notes`); a general note on the object is the standalone `note` field set.
 - **A date range needs one `event` field set, not two.** It already has a date column and
   an "End date if range" column beside it.
 - **The two subject field sets are alternatives.** Ask for "subjects" — or "keywords" or
   "topics" — and you get `subject`, one heading each; ask for "multipart subjects" or
-  "complex subjects" and you get `multipartSubject`, a heading in two parts. A
+  "complex subjects" and you get `multipartSubject`, a heading in up to two parts. A
   spreadsheet can have one or the other, not both — they number their headers the same
   way, so together they would repeat them. Claude will ask which you want if your
   description implies both.
@@ -185,8 +185,8 @@ Some things to be aware of:
 | `error: The <x> field set cannot repeat` | `access` and `adminMetadata` appear at most once; their headers carry no instance number, so a copy would duplicate headers |
 | `error: The title field set is required` | add a `title` field set; this is about the columns, not the text |
 | `error: Unknown field set type 'x'` | check the spelling against `--list-blocks` |
-| `error: "roles" for contributor has N entries but count is M` | give one role count per contributor; likewise `"notes"` and `form` |
-| `error: "notes" only applies to the form field set` | `notes` nests inside `form`; for general notes, add a standalone `note` field set |
+| `error: "roles" for contributor has N entries but count is M` | give one role count per contributor; likewise `"notes"` and `technicalDetails` |
+| `error: "notes" only applies to the technicalDetails field set` | `notes` nests inside `technicalDetails`; for general notes, add a standalone `note` field set |
 | `error: ...does not match the expected layout` | the template in `assets/` has been changed in a way that moves the field sets |
 | `error: <file> has no data rows` | the uploaded list is empty, or every row in it is blank |
 | `error: <file> has a heading row but no data under it` | the uploaded list has column headings and nothing below them |
