@@ -148,9 +148,17 @@ BLOCK_DEFS = [
     dict(key="contributor", first="Q", last="W", repeatable=True, number_seg=0,
          first_only=("contributor1.status",),
          child=dict(key="role", first="X", last="AA", repeatable=True, number_seg=1)),
-    # The form block ends with a nested note (`form8.note1.*`), repeatable
-    # within its form the way a role is within a contributor.
-    dict(key="form", first="AB", last="AS", repeatable=True, number_seg=0,
+    # The template's form entries form1..form8 are split into two field sets
+    # that may be chosen separately or together: descriptive form (resource
+    # type, form, extent, genre) and technical details (reformatting quality,
+    # digital origin, media type, and a nested note repeatable within its
+    # field set the way a role is within a contributor). Both belong to the
+    # "form" numbering group, so their headers number consecutively across
+    # whichever instances are emitted - see build_plan().
+    dict(key="form", first="AB", last="AM", repeatable=True, number_seg=0,
+         number_group="form"),
+    dict(key="technicalDetails", first="AN", last="AS", repeatable=True,
+         number_seg=0, number_group="form",
          child=dict(key="note", first="AT", last="AU", repeatable=True,
                     number_seg=1)),
     dict(key="event", first="AV", last="BN", repeatable=True, number_seg=0,
@@ -198,7 +206,15 @@ PREFIX_FIRST, PREFIX_LAST = "A", "C"
 ALIASES = {
     "titles": "title", "contributors": "contributor", "creator": "contributor",
     "creators": "contributor", "forms": "form", "form/genre": "form",
-    "genre": "form", "resource type": "form", "events": "event",
+    "genre": "form", "resource type": "form", "extent": "form",
+    "technical details": "technicalDetails", "technical": "technicalDetails",
+    "technicaldetails": "technicalDetails",
+    "technical metadata": "technicalDetails",
+    "reformatting quality": "technicalDetails",
+    "digital origin": "technicalDetails", "media type": "technicalDetails",
+    "internet media type": "technicalDetails",
+    "form note": "technicalDetails", "form notes": "technicalDetails",
+    "events": "event",
     "origin info": "event", "origininfo": "event", "publication": "event",
     "languages": "language", "notes": "note", "identifiers": "identifier",
     "access information": "access",
@@ -233,7 +249,8 @@ FINGERPRINT = {
     "D": "title1.structuredValue1.value", "P": "title1.status",
     "Q": "contributor1.name1.value", "W": "contributor1.identifier1.type",
     "X": "contributor1.role1.value", "AA": "contributor1.role1.source.code",
-    "AB": "form1.value", "AS": "form7.type",
+    "AB": "form1.value", "AM": "form4.source.code",
+    "AN": "form5.value", "AS": "form7.type",
     "AT": "form8.note1.value", "AU": "form8.note1.displayLabel",
     "AV": "event1.type", "BN": "event1.contributor1.role1.source.code",
     "BO": "language1.value", "BR": "language1.source.code",
@@ -596,11 +613,15 @@ class Template(object):
                   "columns."
             )
 
-    def stride(self, block):
-        """How far to advance the numbering token for each extra instance.
+    def numbering(self, block):
+        """The (lowest, count) of numbers a block uses in its numbering token.
 
-        The Form/Genre block holds form1..form8 in one block, so a second
-        instance has to start at form9 to avoid colliding with the first.
+        Most blocks use one number (`note1`), so each instance steps by one.
+        A form field set uses several - `form` holds form1..form4 and
+        `technicalDetails` form5..form8 - so an instance consumes four numbers
+        and the next one has to start past all of them. The lowest number
+        matters for technicalDetails, whose template headers start at form5
+        but which must renumber from form1 when it is the only form field set.
         """
         seg = block["number_seg"]
         if seg is None:
@@ -611,9 +632,9 @@ class Template(object):
             # A nested child's columns still carry the parent's numbering in
             # segment 0 - form8.note1.value sits outside the parent's own
             # column range but is still a form8 - so they count towards how
-            # far a second parent instance has to step.
+            # many numbers an instance consumes.
             cols = cols + block_columns(child)
-        best = 0
+        nums = []
         for col in cols:
             h = self.header(col)
             if not h:
@@ -623,8 +644,10 @@ class Template(object):
                 continue
             m = re.match(r"^([A-Za-z]+)(\d+)", parts[seg])
             if m:
-                best = max(best, int(m.group(2)))
-        return best or 1
+                nums.append(int(m.group(2)))
+        if not nums:
+            return (1, 1)
+        return (min(nums), max(nums) - min(nums) + 1)
 
 
 def block_columns(block):
@@ -675,32 +698,31 @@ def instance_columns(tpl, block, number):
 # renumbering
 # --------------------------------------------------------------------------
 
-def bump_seg(seg, number, stride):
-    """Shift the number on a leading name token by whole block-widths.
+def bump_seg(seg, delta):
+    """Shift the number on a leading name token by `delta`.
 
-    A block that already holds several numbered entries has to step past all
-    of them, not reset to the instance number: Form/Genre carries form1..form8,
-    so its second instance runs form9..form16. Handles `form6:value` as well as
-    `form6`, because the template has a stray colon there instead of a dot.
+    build_plan() works out each instance's delta. For most blocks it is
+    whole block-widths - the second note is note1 + 1 - but a form field set
+    steps past every number the form field sets before it used, and
+    technicalDetails can shift down (form5 -> form1) when it stands alone.
     """
     m = re.match(r"^([A-Za-z]+)(\d+)(.*)$", seg)
     if not m:
         return seg
-    new = int(m.group(2)) + (number - 1) * stride
+    new = int(m.group(2)) + delta
     return "%s%d%s" % (m.group(1), new, m.group(3))
 
 
-def renumber_header(header, block, number, parent_number=None,
-                    stride=1, parent_stride=1):
+def renumber_header(header, block, delta, parent_delta=None):
     if header is None or block["number_seg"] is None:
         return header
     parts = header.split(".")
     seg = block["number_seg"]
     if seg >= len(parts):
         return header
-    parts[seg] = bump_seg(parts[seg], number, stride)
-    if parent_number is not None and seg > 0:
-        parts[0] = bump_seg(parts[0], parent_number, parent_stride)
+    parts[seg] = bump_seg(parts[seg], delta)
+    if parent_delta is not None and seg > 0:
+        parts[0] = bump_seg(parts[0], parent_delta)
     return ".".join(parts)
 
 
@@ -836,18 +858,18 @@ class Instance(object):
     """One emitted block instance and the columns it occupies."""
 
     def __init__(self, block, number, parent_number=None,
-                 stride=1, parent_stride=1):
+                 delta=0, parent_delta=None):
         self.block = block
-        self.number = number
+        self.number = number            # instance number, used in labels
         self.parent_number = parent_number
-        self.stride = stride
-        self.parent_stride = parent_stride
+        self.delta = delta              # header renumbering offset
+        self.parent_delta = parent_delta
         self.parent_inst = None   # set for nested instances (role, form note)
         self.cols = []            # (src_col, out_col)
 
     def renumber(self, header):
-        return renumber_header(header, self.block, self.number,
-                               self.parent_number, self.stride, self.parent_stride)
+        return renumber_header(header, self.block, self.delta,
+                               self.parent_delta)
 
 
 def normalize_spec(spec):
@@ -976,21 +998,30 @@ def build_plan(tpl, spec):
         out_idx += 1
     instances.append(prefix)
 
+    # Numbers already used per numbering group. A block is its own group
+    # unless it names one; the two form field sets share "form", so whichever
+    # instances are emitted number form1, form2, ... consecutively in column
+    # order, with no gap where a field set was left out.
+    used = {}
     for block, count, child_counts in plan:
-        stride = tpl.stride(block)
+        lo, width = tpl.numbering(block) or (1, 1)
+        group = block.get("number_group", block["key"])
         child = block.get("child")
         for n in range(1, count + 1):
-            inst = Instance(block, n, stride=stride)
+            delta = used.get(group, 0) - (lo - 1)
+            used[group] = used.get(group, 0) + width
+            inst = Instance(block, n, delta=delta)
             for col in instance_columns(tpl, block, n):
                 inst.cols.append((col, idx_to_col(out_idx)))
                 out_idx += 1
             instances.append(inst)
 
             if child:
-                child_stride = tpl.stride(child)
+                child_width = (tpl.numbering(child) or (1, 1))[1]
                 for m in range(1, child_counts[n - 1] + 1):
                     sub = Instance(child, m, parent_number=n,
-                                   stride=child_stride, parent_stride=stride)
+                                   delta=(m - 1) * child_width,
+                                   parent_delta=delta)
                     sub.parent_inst = inst
                     for col in instance_columns(tpl, child, m):
                         sub.cols.append((col, idx_to_col(out_idx)))
@@ -1323,8 +1354,9 @@ def list_blocks(tpl):
             print("  %-16s %-9s %-8s %s"
                   % ("  " + c["key"], "%s-%s" % (c["first"], c["last"]),
                      "nested", tpl.header(c["first"]) or ""))
-    print("\n  The form field set holds form1..form8, so each extra instance starts at")
-    print("  form9, form17, ... Access and adminMetadata appear at most once.")
+    print("\n  form and technicalDetails each hold four form entries and number them")
+    print("  consecutively across every instance of either, in column order.")
+    print("  Access and adminMetadata appear at most once.")
     print("  Title is required: adminMetadata's formulas key off its Main title cell.")
     for group in EXCLUSIVE_GROUPS:
         print("  %s and %s are alternatives: a workbook carries one or the other."

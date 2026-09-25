@@ -14,8 +14,9 @@ the cataloguer types; the rest are computed by formula or left for manual entry.
 | `title` | D–P | yes | 13 |
 | `contributor` | Q–W | yes | 7 |
 | `contributor > role` | X–AA | nested | 4 |
-| `form` | AB–AS | yes | 18 |
-| `form > note` | AT–AU | nested | 2 |
+| `form` | AB–AM | yes | 12 |
+| `technicalDetails` | AN–AS | yes | 6 |
+| `technicalDetails > note` | AT–AU | nested | 2 |
 | `event` | AV–BN | yes | 19 |
 | `language` | BO–BR | yes | 4 |
 | `note` | BS–BU | yes | 3 |
@@ -78,10 +79,12 @@ leading segment follows the parent's own numbering.
 | AA |  | `contributor1.role1.source.code` | `=IFERROR(IF(ISBLANK(X4),"",VLOOKUP(X4,role!A:D,4,FALSE)&""),"")` |
 
 
-## `form`  (AB–AS)
+## `form`  (AB–AM)
 
-Repeats. Holds 8 numbered entries (`form1`..`form8`), so instance 2
-starts at `form9`.
+Row-1 label "Form/Genre #1". Repeats. Holds 4 numbered entries
+(`form1`..`form4`). `form` and `technicalDetails` share one numbering: every
+instance of either takes the next four numbers in column order, so the
+headers run `form1`, `form2`, … with no gap whichever are included.
 
 | col | entry label (row 2) | header (row 3) | formula |
 |---|---|---|---|
@@ -97,6 +100,17 @@ starts at `form9`.
 | AK |  | `form4.type` | `=IFERROR(IF(ISBLANK(AJ4),"","genre"),"")` |
 | AL |  | `form4.uri` | `=IFERROR(IF(ISBLANK(AJ4),"",VLOOKUP(AJ4,genre!A:C,2,FALSE)&""),"")` |
 | AM |  | `form4.source.code` | `=IFERROR(IF(ISBLANK(AJ4),"",VLOOKUP(AJ4,genre!A:C,3,FALSE)&""),"")` |
+
+
+## `technicalDetails`  (AN–AS)
+
+Row-1 label "Technical details #1". Repeats. Holds 4 numbered entries, the
+last being its nested note; the template numbers them `form5`..`form8`, but
+they renumber into the shared form sequence, so on their own they run
+`form1`..`form4` (note `form4.note1`).
+
+| col | entry label (row 2) | header (row 3) | formula |
+|---|---|---|---|
 | AN | Reformatting quality | `form5.value` | *entry* |
 | AO |  | `form5.type` | `=IFERROR(IF(ISBLANK(AN4),"","reformatting quality"),"")` |
 | AP | Digital origin | `form6.value` | *entry* |
@@ -105,7 +119,7 @@ starts at `form9`.
 | AS |  | `form7.type` | `=IFERROR(IF(ISBLANK(AR4),"","media type"),"")` |
 
 
-## `form > note`  (AT–AU)
+## `technicalDetails > note`  (AT–AU)
 
 Nested: repeats inside its parent block, one or more per parent
 instance. The `note` number counts within the parent, while the

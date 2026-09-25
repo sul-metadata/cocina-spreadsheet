@@ -57,7 +57,7 @@ for is the spec; a column they never agreed to is a column someone has to be tol
 ignore.
 
 **Suggest, don't insist, and don't invent a requirement.** `form` is the usual candidate
-— it holds resource type, genre, extent and media type, which many batches want — so
+— it holds resource type, form, extent and genre, which many batches want — so
 naming it when it's missing is useful. But it is not required: say "worth considering",
 not "the load needs it". The only requirement to state is `title`, which the builder
 itself rejects a spec without.
@@ -77,20 +77,22 @@ Excel. The same goes for every other block: counts are the only thing being deci
 Valid block types, and how many times each may appear:
 
 People ask in descriptive terms, not block names, so the middle column is what you
-match their words against — "repository" and "shelf locator" both mean `access`, and a
-request for "genre" or "extent" means `form`:
+match their words against — "repository" and "shelf locator" both mean `access`, a
+request for "genre" or "extent" means `form`, and "technical details", "digital origin"
+or "media type" means `technicalDetails`:
 
 | type | what it holds | repeats |
 |---|---|---|
 | `title` | main title, subtitle, part number/name, nonsorting article | yes — **required**, always ask how many |
 | `contributor` | name, type, name and identifier URIs, authority codes; carries one or more nested `role` blocks | yes |
-| `form` | resource type, form, extent, genre, reformatting quality, digital origin, media type; carries one or more nested `note` blocks | yes |
+| `form` | labelled "Form/Genre": general resource type, form, extent, genre | yes |
+| `technicalDetails` | labelled "Technical details": reformatting quality, digital origin, internet media type; carries one or more nested form `note` blocks | yes |
 | `event` | labelled "Origin info": date, end-date-if-range, approximate flag, place, **publisher** | yes |
 | `language` | language, code, URI, authority code | yes |
 | `note` | note, type, display label | yes |
 | `identifier` | identifier, type, display label | yes |
 | `subject` | one heading per subject, with type, URI and authority | yes |
-| `multipartSubject` | a two-part structured heading, with type, URI and authority for the whole and for each part | yes |
+| `multipartSubject` | a two-part structured heading, with type, URI and authority for each part | yes |
 | `relatedResource` | type, display label, title, PURL, other URL, abstract | yes |
 | `geographic` | MIME type, DC resource type, point coordinates, bounding box | yes |
 | `access` | **repository/library** (with URI and authority code) and **shelf locator** | **once only** — its headers carry no instance number, so a second copy would collide |
@@ -101,14 +103,23 @@ instance:
 
 - **Roles inside contributors.** "Two contributors, the first with three roles" is
   `contributor` count 2 with `"roles": [3, 1]`.
-- **Form notes inside forms.** "Two forms, two notes on the second" is `form` count 2
-  with `"notes": [1, 2]`.
+- **Form notes inside technical details.** "Two sets of technical details, two notes on
+  the second" is `technicalDetails` count 2 with `"notes": [1, 2]`.
 
 If they don't mention roles or form notes, give each parent one. Note the two senses of
-"note": a form note is the `notes` list inside a `form` block, while a general note on
+"note": a form note is the `notes` list inside a `technicalDetails` block, while a general note on
 the object is the standalone `note` block. Ask which they mean if it isn't clear from
 context — "a note about the file format" is a form note, "a general note" is the `note`
-block.
+block. A form note brings the rest of `technicalDetails` with it, so asking for one is
+asking for that field set.
+
+**`form` and `technicalDetails` are two halves of the template's form entries, and a
+workbook may carry either or both.** Both number their headers from one sequence, in
+column order: `form` alone runs `form1`..`form4`, `technicalDetails` alone also runs
+`form1`..`form4` (its note is `form4.note1`), and both together run `form1`..`form8`.
+Repeats continue the same sequence, so the numbers never skip or repeat. Asking for
+"form" or "form/genre" means `form` only; don't add `technicalDetails` unless they ask
+for something it holds — suggest it instead, the same as any other field set.
 
 **The two subject field sets are alternatives, and a workbook carries only one.**
 
@@ -118,7 +129,11 @@ block.
   with type, URI and authority derived from it.
 - **"multipart subject"**, "complex subject" or "structured subject" →
   `multipartSubject`: thirteen columns per instance, a heading in two parts, each part
-  with its own type, URI and authority.
+  with its own type, URI and authority. The whole-heading `subject1.type`, `.uri` and
+  `.source.code` columns are there, but their formulas fire only while part 2 is empty
+  — so a row with one term filled in behaves like a simple subject, and a genuinely
+  two-part heading carries its type, URI and authority per part and leaves the
+  whole-heading ones blank.
 
 They cannot both appear. Both number their headers from `subject1`, and the simple set's
 four headers are the same strings as four inside the multipart set, so a sheet with both
@@ -138,16 +153,17 @@ confirm. Head it `Subjects` and ask:
 > Should the subjects be single or multipart?
 
 with the two options `Single subjects` and `Multipart subjects`, each described by what
-it gives them — "One heading per subject, with type, URI and authority derived from it;
-4 columns each" and "A two-part heading per subject, with type, URI and authority for
-the whole and for each part; 13 columns each". Keep the count they asked for in both.
+it gives them — "One heading per subject, with type, URI and authority derived from it"
+and "A two-part heading per subject, with type, URI and authority for each part". No
+column counts here either; what separates the two is the shape of the heading, not how
+wide it is. Keep the count they asked for in both.
 Once they answer, show the field-set list with the chosen kind and make the Step 2 call
 as usual. Ask this only when the request implies both kinds; it is the one exception to
 Step 2's single round trip.
 
 `references/blocks.md` lists every header, entry label and formula in each block. Read
 it when someone asks what a block covers, or to check whether a field they want is
-already inside a block they've asked for — `form` in particular bundles eight distinct
+already inside a block they've asked for — `form` in particular bundles four distinct
 form entries, so people asking for "genre" and "extent" separately need one `form`
 block, not two.
 
@@ -184,7 +200,7 @@ Field sets to include:
  - 2 subjects
  - access information
  - administrative metadata (always included)
-Leaving out: form/genre, origin info, language, note, identifier, related resource, geographic
+Leaving out: form/genre, technical details, origin info, language, note, identifier, related resource, geographic
 ```
 
 | question | options |
@@ -212,7 +228,9 @@ saying *what happens if they pick it*, in concrete terms:
   down, so no identifier is typed by hand, plus one empty row below them to fill down
   from if you add more objects."
 - `Build as listed` → restate the shape in one line — "1 title, 2 contributors with one
-  role each, 3 subjects, access information, admin metadata; about 110 columns."
+  role each, 3 subjects, access information, admin metadata." No column count here
+  either: you would have to build the workbook to know it, which is the one thing this
+  question exists to happen *after*.
 
 **Describe the consequence, don't recommend the choice.** "Formulas on row 4, ready to
 fill down" is context; "probably what you want" is advice. The distinction matters most
@@ -333,14 +351,6 @@ unsuitable**, which is common enough to check. A `\\wsl.localhost\...` UNC path 
 Step 6 forbids handing back, and a source repository is not where a metadata work file
 belongs. In either case use `Documents` instead and say that is what you did.
 
-One thing to raise at this point if it applies, since it isn't obvious from the output:
-**repeating `form`**. The block holds `form1`..`form8`, so a second instance runs
-`form9`..`form16` — its seven entries are `form9`..`form15` and its note is `form16`,
-with the extra notes of one form sharing that number (`form16.note1.value`,
-`form16.note2.value`).
-That is the correct Cocina encoding, but the numbers jump, and someone scanning the
-headers may read it as a mistake.
-
 ### Step 3 — Pre-fill the rows from an uploaded list
 
 **Always ask whether they have an object list; the asking is not optional, only the
@@ -424,7 +434,8 @@ The spec itself is small:
   "blocks": [
     {"type": "title", "count": 1},
     {"type": "contributor", "count": 2, "roles": [3, 1]},
-    {"type": "form", "count": 2, "notes": [1, 2]},
+    {"type": "form", "count": 2},
+    {"type": "technicalDetails", "count": 1, "notes": [2]},
     {"type": "subject", "count": 2},
     {"type": "access"},
     {"type": "adminMetadata"}
@@ -474,7 +485,7 @@ way to confirm the template is intact before building.
 The script refuses to build rather than guess when something is wrong: a missing
 `title` block, an unknown block type, a repeat count on `access` or `adminMetadata`, a
 `roles` or `notes` list that doesn't match its parent's count, a `roles` list on a block
-other than `contributor` (or `notes` on a block other than `form`), or a template whose
+other than `contributor` (or `notes` on a block other than `technicalDetails`), or a template whose
 layout no longer matches what the block ranges were derived from. Read the error and fix the spec — these messages are
 specific, and working around one by hand-editing the output is how silently wrong
 workbooks get shipped.
@@ -548,21 +559,25 @@ Concretely:
   is worth, and only alongside something they actually have to act on.
 - Don't explain the same thing twice, and don't close with a summary of what you just
   said.
+- **No column counts.** "89 columns" is a fact about the file, not about their batch:
+  nobody decides anything differently for 67 than for 89, and the number invites a
+  check they have no reason to run. Name the field sets instead — that is what they
+  asked for and what they can verify at a glance.
 
 A hand-over that covers everything:
 
 ```
-Built: example_batch.xlsx — 110 columns.
+Built: example_batch.xlsx
 
 1 title, 2 contributors (1 role each), origin info, 3 subjects, access
-information, admin metadata. Left out: form/genre, language, note, identifier,
-related resource, geographic.
+information, admin metadata. Left out: form/genre, technical details, language,
+note, identifier, related resource, geographic.
 
 You asked for 2 access field sets; access can't repeat, so there's one. Its
 headers carry no instance number, and a second copy would collide.
 
-Worth considering: form/genre, which holds resource type, genre, extent and
-media type. I left it out since you didn't ask — say the word and I'll rebuild.
+Worth considering: form/genre, which holds resource type, form, extent and
+genre. I left it out since you didn't ask — say the word and I'll rebuild.
 
 Formulas are on row 4 — fill down to your 40 rows.
 
