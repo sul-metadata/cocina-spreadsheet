@@ -23,6 +23,15 @@ rather than discovering.
 - **Resolve columns by header text, never by remembered letter.** Column letters move
   with the spec: the same date entry column has landed on `AW`, `AM` and `AY` in
   different builds. A hardcoded letter silently checks the wrong column.
+- **The builder prints a column count, not a header count, and the two differ.** Three
+  field sets put the typed cell in a column with no row-3 header of its own, one per
+  instance: `title`'s "Main title", `event`'s "Date (YYYY-MM-DD)", and
+  `multipartSubject`'s "part 1 value". So `headers = columns - instances of those
+  three`: a title plus two events is 3 short, three titles is 3 short, and a title plus
+  two simple `subject` sets is 1 short, because the simple set's own value column does
+  carry its header. Deriving the expected header count from the printed column count
+  produces an off-by-a-few that reads as missing headers. `blocks.md` marks these
+  columns with `—` in the header column.
 - **Assert your checker found what it meant to inspect** — `len(headers) > 50` or
   similar. It is the one guard that turns every trap above from a green run into a
   visible failure. It only catches a total miss, though: a checker that found 85 of 87
