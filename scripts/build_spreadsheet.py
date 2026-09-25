@@ -22,6 +22,22 @@ MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 NS = "{%s}" % MAIN
 ET.register_namespace("", MAIN)
 
+# Excel's own extensions. A workbook saved by Excel carries validations whose
+# list comes from another sheet in an <extLst> under these namespaces instead of
+# in the plain <dataValidations> block, and tags rows with x14ac:dyDescent.
+# Both are read here; neither is written back, since the output declares only
+# the main namespace.
+X14 = "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}"
+XM = "{http://schemas.microsoft.com/office/excel/2006/main}"
+
+# Parts that are not comments but still must not be copied into the output.
+# calcChain.xml caches the order Excel evaluated formulas in; the generated
+# sheet has different columns, so a copied chain names cells that no longer
+# exist and Excel offers to repair the file. force_recalc() sets
+# fullCalcOnLoad, which makes the chain redundant anyway.
+DROP_PARTS = ("xl/calcChain.xml",)
+DROP_REL_HINTS = ("calcChain",)
+
 SHEET_PART = "xl/worksheets/sheet2.xml"
 SHEET_RELS = "xl/worksheets/_rels/sheet2.xml.rels"
 
@@ -43,6 +59,55 @@ COMMENT_REL_HINTS = ("comments", "threadedComment", "vmlDrawing",
 
 def is_comment_part(name):
     return any(re.match(p, name) for p in COMMENT_PART_PATTERNS)
+
+
+def is_dropped_part(name):
+    return is_comment_part(name) or name in DROP_PARTS
+
+
+def plain_attrs(el):
+    """An element's attributes with namespaced ones removed.
+
+    ElementTree hands back a namespaced attribute as "{uri}local". The sheet is
+    assembled as text, so writing that key out produces an attribute name no
+    parser accepts - which is exactly what happened when Excel added
+    x14ac:dyDescent to every row. The output declares only the main namespace,
+    so the honest thing is to drop what it cannot name; dyDescent is a
+    rendering hint Excel recomputes.
+    """
+    return {k: v for k, v in el.attrib.items() if not k.startswith("{")}
+
+
+def strip_ns_attrs(el):
+    """Same, applied in place to an element and its descendants."""
+    for node in el.iter():
+        for k in [k for k in node.attrib if k.startswith("{")]:
+            del node.attrib[k]
+    return el
+
+
+def home_the_cursor(sheet_views):
+    """Open the metadata sheet at A1, wherever the template was left.
+
+    Excel stores the cursor and scroll position of the sheet it was saved on,
+    so a template last edited in column EJ hands every generated workbook to
+    the cataloguer scrolled past the end of the headers with a far-right cell
+    selected. Normalising here rather than in the template means the next save
+    cannot re-pin it.
+
+    A frozen pane is left alone: its selections are per-pane, and this template
+    has none, so rewriting them would be a guess.
+    """
+    for view in sheet_views:
+        if view.find(NS + "pane") is not None:
+            continue
+        view.attrib.pop("topLeftCell", None)
+        for sel in view.findall(NS + "selection"):
+            view.remove(sel)
+        sel = ET.SubElement(view, NS + "selection")
+        sel.set("activeCell", "A1")
+        sel.set("sqref", "A1")
+    return sheet_views
 
 HEADER_ROWS = (1, 2, 3)
 FORMULA_ROW = 4
@@ -94,7 +159,13 @@ BLOCK_DEFS = [
     dict(key="note", first="BS", last="BU", repeatable=True, number_seg=0),
     dict(key="identifier", first="BV", last="BX", repeatable=True, number_seg=0),
     dict(key="access", first="BY", last="CD", repeatable=False, number_seg=None),
-    dict(key="subject", first="CE", last="CQ", repeatable=True, number_seg=0),
+    # Two subject field sets, and a workbook may carry only one of them. Both
+    # number their headers from `subject1`, so a sheet holding both would have
+    # `subject1.value` twice - CF in the multipart set, EF in the simple one.
+    # EXCLUSIVE_GROUPS below is what enforces it.
+    dict(key="multipartSubject", first="CE", last="CQ", repeatable=True,
+         number_seg=0),
+    dict(key="subject", first="EF", last="EI", repeatable=True, number_seg=0),
     dict(key="relatedResource", first="CR", last="CX", repeatable=True, number_seg=0),
     dict(key="geographic", first="CY", last="DT", repeatable=True, number_seg=0),
     dict(key="adminMetadata", first="DU", last="EC", repeatable=False,
@@ -102,6 +173,11 @@ BLOCK_DEFS = [
 ]
 
 BLOCK_BY_KEY = {b["key"]: b for b in BLOCK_DEFS}
+
+# Field sets that cannot share a workbook. The builder cannot choose between
+# them - the person asking has to - so a spec naming both is an error rather
+# than a silent preference for one.
+EXCLUSIVE_GROUPS = [("subject", "multipartSubject")]
 
 
 def CHILD_FIELD(child):
@@ -125,7 +201,24 @@ ALIASES = {
     "genre": "form", "resource type": "form", "events": "event",
     "origin info": "event", "origininfo": "event", "publication": "event",
     "languages": "language", "notes": "note", "identifiers": "identifier",
-    "access information": "access", "subjects": "subject",
+    "access information": "access",
+    # Plain "subject" means the simple set; the structured one has to be asked
+    # for by name.
+    "subjects": "subject", "simple subject": "subject",
+    "simple subjects": "subject", "simplesubject": "subject",
+    "single subject": "subject", "single subjects": "subject",
+    "singlesubject": "subject",
+    # What a cataloger calls them when not thinking in Cocina terms
+    "keyword": "subject", "keywords": "subject",
+    "topic": "subject", "topics": "subject",
+    "multipart subject": "multipartSubject",
+    "multipart subjects": "multipartSubject",
+    "multipartsubject": "multipartSubject",
+    "complex subject": "multipartSubject",
+    "complex subjects": "multipartSubject",
+    "complexsubject": "multipartSubject",
+    "structured subject": "multipartSubject",
+    "structured subjects": "multipartSubject",
     "related resource": "relatedResource", "relatedresource": "relatedResource",
     "related resources": "relatedResource", "geographic data": "geographic",
     "geo": "geographic", "administrative metadata": "adminMetadata",
@@ -148,6 +241,7 @@ FINGERPRINT = {
     "BV": "identifier1.value", "BX": "identifier1.displayLabel",
     "BY": "access.accessContact1.value", "CD": "access.physicalLocation1.type",
     "CF": "subject1.value", "CQ": "subject1.structuredValue2.source.code",
+    "EF": "subject1.value", "EI": "subject1.source.code",
     "CR": "relatedResource1.type", "CX": "relatedResource1.note1.type",
     "CY": "geographic1.form1.value", "DT": "geographic1.subject2.encoding.value",
     "DU": "adminMetadata.language1.value",
@@ -388,10 +482,13 @@ class Template(object):
         for tag in ("sheetPr", "sheetViews", "sheetFormatPr"):
             el = root.find(NS + tag)
             if el is not None:
-                self.pre_xml += ET.tostring(el, encoding="utf-8")
+                if tag == "sheetViews":
+                    el = home_the_cursor(el)
+                self.pre_xml += ET.tostring(strip_ns_attrs(el), encoding="utf-8")
 
         el = root.find(NS + "drawing")
-        self.drawing_xml = ET.tostring(el, encoding="utf-8") if el is not None else b""
+        self.drawing_xml = (ET.tostring(strip_ns_attrs(el), encoding="utf-8")
+                            if el is not None else b"")
 
         # column widths, expanded per column index
         self.widths = {}
@@ -399,7 +496,8 @@ class Template(object):
         if cols is not None:
             for c in cols:
                 lo, hi = int(c.get("min")), int(c.get("max"))
-                attrs = {k: v for k, v in c.attrib.items() if k not in ("min", "max")}
+                attrs = {k: v for k, v in plain_attrs(c).items()
+                         if k not in ("min", "max")}
                 for i in range(lo, hi + 1):
                     self.widths[i] = attrs
 
@@ -429,19 +527,45 @@ class Template(object):
             r = int(row.get("r"))
             if r in HEADER_ROWS or r == FORMULA_ROW or r == BLANK_ROW:
                 self.row_attrs[r] = {
-                    k: v for k, v in row.attrib.items() if k not in ("r", "spans")
+                    k: v for k, v in plain_attrs(row).items()
+                    if k not in ("r", "spans")
                 }
 
-        # data validations, keyed by the single column each one covers
+        # Data validations, keyed by the single column each one covers. They
+        # live in two places: the plain <dataValidations> block, and - once
+        # Excel has saved the file - an <extLst> for any list sourced from
+        # another sheet. Reading only the first cost six vocabulary dropdowns
+        # (contributor, role, resource type, genre, language, subject) the
+        # moment the template was opened and saved.
         self.validations = {}
+        self.dv_from_ext = set()
+
+        def record(col, attrs, formula):
+            self.validations[col] = (attrs, formula)
+
         dv = root.find(NS + "dataValidations")
         if dv is not None:
             for d in dv:
                 f1 = d.find(NS + "formula1")
-                attrs = {k: v for k, v in d.attrib.items() if k != "sqref"}
+                attrs = {k: v for k, v in plain_attrs(d).items() if k != "sqref"}
                 for ref in (d.get("sqref") or "").split():
                     col = re.match(r"([A-Z]+)", ref).group(1)
-                    self.validations[col] = (attrs, f1.text if f1 is not None else None)
+                    record(col, attrs, f1.text if f1 is not None else None)
+
+        for d in root.iter(X14 + "dataValidation"):
+            attrs = {k: v for k, v in plain_attrs(d).items() if k != "sqref"}
+            f1 = d.find(X14 + "formula1")
+            formula = None
+            if f1 is not None:
+                inner = f1.find(XM + "f")
+                formula = (inner.text if inner is not None else f1.text)
+            sq = d.find(XM + "sqref")
+            for ref in ((sq.text if sq is not None else "") or "").split():
+                col = re.match(r"([A-Z]+)", ref).group(1)
+                # The plain block wins if a column somehow appears in both.
+                if col not in self.validations:
+                    record(col, attrs, formula)
+                    self.dv_from_ext.add(col)
 
     def header(self, col):
         return self.rows.get(3, {}).get(col, {}).get("text")
@@ -803,6 +927,18 @@ def normalize_spec(spec):
 
         plan.append((block, count, counts))
 
+    for group in EXCLUSIVE_GROUPS:
+        both = [k for k in group if k in seen]
+        if len(both) > 1:
+            raise BuildError(
+                "A workbook can carry %s or %s, but not both - they both number "
+                "their headers from \"%s1\", so a sheet with both would repeat "
+                "every one of those headers. Ask which is wanted and build that "
+                "one: %s for a single heading per subject, %s for a structured "
+                "heading in two parts."
+                % (both[0], both[1], group[0], group[0], group[1])
+            )
+
     for block in BLOCK_DEFS:
         if block.get("required") and block["key"] not in seen:
             raise BuildError(
@@ -1080,11 +1216,11 @@ def generate_sheet(tpl, instances, total_cols, data_rows, seed=None):
 # --------------------------------------------------------------------------
 
 def strip_rels(raw):
-    """Drop comment-related relationships, keep everything else."""
+    """Drop relationships to parts the output does not carry."""
     txt = raw.decode("utf-8")
     kept = [m.group(0) for m in re.finditer(r"<Relationship\b[^>]*/>", txt)
             if not any(h.lower() in m.group(0).lower()
-                       for h in COMMENT_REL_HINTS)]
+                       for h in COMMENT_REL_HINTS + DROP_REL_HINTS)]
     head = txt[:txt.index(">", txt.index("<Relationships")) + 1]
     return (head + "".join(kept) + "</Relationships>").encode("utf-8")
 
@@ -1123,7 +1259,7 @@ def force_recalc(raw):
 
 def write_workbook(tpl, sheet_xml, out_path):
     src = tpl.zf
-    dropped = [n for n in src.namelist() if is_comment_part(n)]
+    dropped = [n for n in src.namelist() if is_dropped_part(n)]
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as out:
         for item in src.infolist():
             name = item.filename
@@ -1190,6 +1326,9 @@ def list_blocks(tpl):
     print("\n  The form field set holds form1..form8, so each extra instance starts at")
     print("  form9, form17, ... Access and adminMetadata appear at most once.")
     print("  Title is required: adminMetadata's formulas key off its Main title cell.")
+    for group in EXCLUSIVE_GROUPS:
+        print("  %s and %s are alternatives: a workbook carries one or the other."
+              % (group[0], group[1]))
     print("  adminMetadata is added automatically and always sits last.")
 
 

@@ -20,16 +20,17 @@ Google Sheets.
 
 ## Installing the skill
 
-Download and install Claude for Education Standard from
+Get a Stanford license for Claude for Education Standard from
 [https://uit.stanford.edu/service/claude](https://uit.stanford.edu/service/claude).
-Make sure the toggle at the top left is set to "Code."
+Download and install the Claude desktop app. Open it and make sure the toggle at the
+top left is set to "Code."
 
-Download the skill from GitHub. Click on the green **Code** button at the upper right
-of the file pane and select **Download ZIP**. Right click on the downloaded file and
-use 7Zip or another utility to extract the files. Create a `cocina-spreadsheet` folder
-in your Claude skills directory `~/.claude/skills/` (on Windows,
-`C:\Users\<you>\.claude\skills\`). Copy the downloaded files there. Keep the internal
-layout intact; the builder finds the template relative to its own location.
+Download the cocina-spreadsheet skill from GitHub. Click on the green **Code** button
+at the upper right of the file pane and select **Download ZIP**. Right click on the
+downloaded file and use 7Zip or another utility to extract the files. Create a
+`cocina-spreadsheet` folder in your Claude skills directory `~/.claude/skills/` (on
+Windows, `C:\Users\<you>\.claude\skills\`). Copy the downloaded files there. Keep the
+internal layout intact; the builder finds the template relative to its own location.
 
 **Requirements: Python 3.** The builder uses only the standard Python library. You don't
 need Excel or a Google account to build a workbook, only to fill one in.
@@ -38,9 +39,9 @@ The skill will check for a Python installation, or you can check yourself via th
 command line. If `python --version` fails or prints "Python was not found", you don't
 have it. Install from [python.org/downloads](https://www.python.org/downloads/) (tick
 **Add python.exe to PATH**), `brew install python` on macOS, or
-`sudo apt install -y python3` on Linux. If Python still reports that message, Windows is
-shadowing it: turn that off under Settings → Apps → Advanced app settings → App
-execution aliases.
+`sudo apt install -y python3` on Linux. If Python still reports that it is not
+present, Windows may be shadowing it: turn that off under Settings → Apps → Advanced
+app settings → App execution aliases.
 
 To check the install, start a new Claude session and ask for something the skill covers:
 
@@ -106,8 +107,9 @@ downloaded CSV in Excel; that may change the encoding and date formatting.
 when exporting the file to CSV:
 
 - **Select the `metadata` tab before exporting.** A CSV holds one sheet and the export
-  takes whichever is active — a freshly opened workbook shows `Instructions`, so you
-  would export the instructions text. The same applies to Google Sheets.
+  takes whichever is active. The workbook opens on `metadata` at A1, so this only bites
+  if you have been reading the `Instructions` tab and export without going back. The
+  same applies to Google Sheets.
 - **Save As → `CSV UTF-8 (Comma delimited)`**, not `CSV (Comma delimited)`.
 
 ---
@@ -142,7 +144,8 @@ separately from their parent properties.
 | `language` | language, code, URI, authority | yes |
 | `note` | note, type, display label | yes |
 | `identifier` | identifier, type, display label | yes |
-| `subject` | two-part structured heading, type, URI, authority | yes |
+| `subject` | one heading per subject, type, URI, authority | yes |
+| `multipartSubject` | two-part structured heading, type, URI, authority | yes |
 | `relatedResource` | type, title, PURL, other URL, abstract | yes |
 | `geographic` | MIME type, point coordinates, bounding box | yes |
 | `access` | Repository/Library and Shelf locator | **once only** |
@@ -151,7 +154,7 @@ separately from their parent properties.
 `title` is required for every object, and the `adminMetadata` formulas key off its
 main-title cell. `references/blocks.md` lists every column of every field set.
 
-Three things to be aware of:
+Some things to be aware of:
 
 - **`form` holds multiple numbered entries** (`form1`..`form8`) covering resource type,
   genre, extent, etc., the last being the form note. If a second form field set is
@@ -160,6 +163,12 @@ Three things to be aware of:
   general note on the object is the standalone `note` field set.
 - **A date range needs one `event` field set, not two.** It already has a date column and
   an "End date if range" column beside it.
+- **The two subject field sets are alternatives.** Ask for "subjects" — or "keywords" or
+  "topics" — and you get `subject`, one heading each; ask for "multipart subjects" or
+  "complex subjects" and you get `multipartSubject`, a heading in two parts. A
+  spreadsheet can have one or the other, not both — they number their headers the same
+  way, so together they would repeat them. Claude will ask which you want if your
+  description implies both.
 
 ---
 
@@ -184,16 +193,3 @@ Three things to be aware of:
 | `error: Don't know how to read '<file>'` | save the list as `.csv`, `.tsv` or `.xlsx`; `.xls` and other formats are not read |
 | `error: Data file not found: <path>` | upload the list rather than naming a path, or check the path is the one Claude was given |
 | `error: That spec needs N columns; Excel's limit is 16384` | the counts asked for more columns than a sheet can hold; reduce them |
-
----
-
-## Updating the bundled template
-
-`assets/cocina_spreadsheet.xlsx` is what every build starts from; edit it and every
-future workbook inherits the change. The builder checks a fingerprint of its layout
-and refuses to run if the columns have changed, rather than copying the wrong columns.
-**Editing cell text, formulas, styles or the vocabulary tabs is safe; inserting or
-deleting columns in the `metadata` sheet needs the field set ranges in
-`scripts/build_spreadsheet.py` updated to match.** You may add additional instructional
-text to the column labels (not the coded headers), color-code columns, or prepopulate
-tabs and they will be picked up as defaults when generating new templates.

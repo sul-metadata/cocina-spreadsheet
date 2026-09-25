@@ -89,7 +89,8 @@ request for "genre" or "extent" means `form`:
 | `language` | language, code, URI, authority code | yes |
 | `note` | note, type, display label | yes |
 | `identifier` | identifier, type, display label | yes |
-| `subject` | a two-part structured heading, with type, URI and authority for each part | yes |
+| `subject` | one heading per subject, with type, URI and authority | yes |
+| `multipartSubject` | a two-part structured heading, with type, URI and authority for the whole and for each part | yes |
 | `relatedResource` | type, display label, title, PURL, other URL, abstract | yes |
 | `geographic` | MIME type, DC resource type, point coordinates, bounding box | yes |
 | `access` | **repository/library** (with URI and authority code) and **shelf locator** | **once only** — its headers carry no instance number, so a second copy would collide |
@@ -108,6 +109,31 @@ If they don't mention roles or form notes, give each parent one. Note the two se
 the object is the standalone `note` block. Ask which they mean if it isn't clear from
 context — "a note about the file format" is a form note, "a general note" is the `note`
 block.
+
+**The two subject field sets are alternatives, and a workbook carries only one.**
+
+- Plain **"subject"**, "subjects", "simple subject", "single subject", and also
+  **"keywords"** or **"topics"** — what people call them when not thinking in Cocina
+  terms → `subject`: four columns per instance, one heading typed into the value column
+  with type, URI and authority derived from it.
+- **"multipart subject"**, "complex subject" or "structured subject" →
+  `multipartSubject`: thirteen columns per instance, a heading in two parts, each part
+  with its own type, URI and authority.
+
+They cannot both appear. Both number their headers from `subject1`, and the simple set's
+four headers are the same strings as four inside the multipart set, so a sheet with both
+would carry `subject1.value` twice. The builder refuses a spec naming both rather than
+picking one.
+
+**If someone asks for both, ask which they want — don't choose for them.** A batch
+described as "subjects, some of them multipart" is one question, not a judgement call:
+offer `subject` and `multipartSubject` as the two options and say what each gives them.
+Someone who asks only for "subjects" gets the simple set without being asked.
+
+**That question goes in the same `AskUserQuestion` call as the four in Step 2**, as a
+fifth question headed `Subjects`, asked before the field-set list is settled — it
+changes what that list says. It is the one question allowed beyond the four, and only
+when the request implies both kinds.
 
 `references/blocks.md` lists every header, entry label and formula in each block. Read
 it when someone asks what a block covers, or to check whether a field they want is
@@ -474,6 +500,11 @@ reads "original cataloging agency"; name that field as it is.
 in full: "1 title, 2 contributors…" needs no noun at all, but where one is needed it is
 *field set*. `block` stays inside the spec, the builder output and this file.
 
+**Name which subject kind in the shape line**, not just further down: "1 multipart
+subject" or "3 subjects", never a bare "1 subject" for the structured set. The two are
+alternatives and a rebuild is a new file, so which one they got is exactly the thing
+worth catching on the first read rather than in a later paragraph.
+
 **Professional means a colleague's register, not a service voice.** Plain declarative
 sentences about the work. No greeting, no sign-off, no "Great question", no "Happy to
 help", no "I hope this helps", no congratulating them on the batch, no exclamation
@@ -585,8 +616,9 @@ Two things are worth a line when they apply:
 
 Answer these if asked, but never volunteer them:
 
-- **Exporting.** A CSV holds one sheet and takes the active one, and a fresh workbook
-  opens on `Instructions`; in Excel the format must be `CSV UTF-8 (Comma delimited)`,
+- **Exporting.** A CSV holds one sheet and takes the active one. The workbook opens on
+  `metadata` at A1, so the risk is exporting after a detour through `Instructions`
+  rather than on the first try; in Excel the format must be `CSV UTF-8 (Comma delimited)`,
   since plain CSV writes `é` as the cp1252 byte `E9` and corrupts every diacritic
   silently. The Sheets route sidesteps both. This is real and it matters — it is just
   not hand-over material, because it belongs to a day that hasn't happened yet.
