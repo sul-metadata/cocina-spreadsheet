@@ -130,10 +130,20 @@ described as "subjects, some of them multipart" is one question, not a judgement
 offer `subject` and `multipartSubject` as the two options and say what each gives them.
 Someone who asks only for "subjects" gets the simple set without being asked.
 
-**That question goes in the same `AskUserQuestion` call as the four in Step 2**, as a
-fifth question headed `Subjects`, asked before the field-set list is settled — it
-changes what that list says. It is the one question allowed beyond the four, and only
-when the request implies both kinds.
+**That question is a fifth question, asked in its own `AskUserQuestion` call before
+the four in Step 2.** The tool accepts at most four questions per call, so it cannot
+join them; it goes first because the answer changes the field-set list those four
+confirm. Head it `Subjects` and ask:
+
+> Should the subjects be single or multipart?
+
+with the two options `Single subjects` and `Multipart subjects`, each described by what
+it gives them — "One heading per subject, with type, URI and authority derived from it;
+4 columns each" and "A two-part heading per subject, with type, URI and authority for
+the whole and for each part; 13 columns each". Keep the count they asked for in both.
+Once they answer, show the field-set list with the chosen kind and make the Step 2 call
+as usual. Ask this only when the request implies both kinds; it is the one exception to
+Step 2's single round trip.
 
 `references/blocks.md` lists every header, entry label and formula in each block. Read
 it when someone asks what a block covers, or to check whether a field they want is
