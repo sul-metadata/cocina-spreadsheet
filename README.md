@@ -172,27 +172,3 @@ Some things to be aware of:
   spreadsheet can have one or the other, not both — they number their headers the same
   way, so together they would repeat them. Claude will ask which you want if your
   description implies both.
-
----
-
-## Troubleshooting
-
-| symptom | cause |
-|---|---|
-| `Python was not found`, exit 9009 | the Microsoft Store placeholder, not Python |
-| The CSV contains the instructions text | the wrong tab was active on export; select `metadata` first |
-| Diacritics mangled in the loaded CSV | exported as plain `CSV` rather than `CSV UTF-8` |
-| A date turned into a number | the column lost its Text format — in Sheets, Format → Number → Plain text; in Excel, Format Cells → Text |
-| A drop-down missing after import | the vocabulary tabs are still there, so the term can be typed; the derived columns key off the cell text, not the drop-down |
-| Claude doesn't pick the skill up | check the folder name, and that `SKILL.md` is at its top level |
-| `error: The <x> field set cannot repeat` | `access` and `adminMetadata` appear at most once; their headers carry no instance number, so a copy would duplicate headers |
-| `error: The title field set is required` | add a `title` field set; this is about the columns, not the text |
-| `error: Unknown field set type 'x'` | check the spelling against `--list-blocks` |
-| `error: "roles" for contributor has N entries but count is M` | give one role count per contributor; likewise `"notes"` and `technicalDetails` |
-| `error: "notes" only applies to the technicalDetails field set` | `notes` nests inside `technicalDetails`; for general notes, add a standalone `note` field set |
-| `error: ...does not match the expected layout` | the template in `assets/` has been changed in a way that moves the field sets |
-| `error: <file> has no data rows` | the uploaded list is empty, or every row in it is blank |
-| `error: <file> has a heading row but no data under it` | the uploaded list has column headings and nothing below them |
-| `error: Don't know how to read '<file>'` | save the list as `.csv`, `.tsv` or `.xlsx`; `.xls` and other formats are not read |
-| `error: Data file not found: <path>` | upload the list rather than naming a path, or check the path is the one Claude was given |
-| `error: That spec needs N columns; Excel's limit is 16384` | the counts asked for more columns than a sheet can hold; reduce them |
