@@ -26,25 +26,29 @@ Google Sheets.
 **Download and install the Claude desktop app** from
 [https://claude.com/download](https://claude.com/download).
 
-**Download the cocina-spreadsheet skill from GitHub** at
-[https://github.com/sul-metadata/cocina-spreadsheet](https://github.com/sul-metadata/cocina-spreadsheet).
-Click on the green **Code** button at the upper right of the file pane and select
-**Download ZIP**.
+**Add the skill to Claude.**
+- *Preferred method*: Request in the Slack channel #cocina-advisory or #dlss-aaas for
+  the skill to be shared with you like a Google Doc. This will allow updates to the
+  skill to automatically apply to your version. In Claude, click on your name at the
+  lower left of the screen and select **Settings**. Go to **Skills** and look under
+  "Shared with you" for the cocina-spreadsheet skill.
+- *Alternative method*: Download the cocina-spreadsheet skill from GitHub at
+  [https://github.com/sul-metadata/cocina-spreadsheet](https://github.com/sul-metadata/cocina-spreadsheet)
+  by clicking on the green **Code** button at the upper right of the file pane and
+  selecting **Download ZIP**. In Claude, click on your name at the lower left of the
+  screen and select **Settings**. Go to **Skills**, click **Add**, and select
+  **Upload skill**. Drag and drop the zip file you downloaded from GitHub into the
+  window. You will need to repeat this process if the skill is updated.
 
-**Add the skill to Claude.** Click on your name at the lower left of the screen and
-select **Settings**. Go to **Skills**, click **Add**, and select **Upload skill**. Drag
-and drop the zip file you downloaded from GitHub into the window.
-
-**Start the skill.** Start a new session and in the chat box, type
-`/cocina-spreadsheet`. Claude should recognize the skill.
+**Run the skill.** Start a new session in Claude. In the chat box, type
+`/cocina-spreadsheet`. Claude should recognize and load the skill.
 
 **Python 3 is required.** The skill will check whether Python is installed on your
 computer. If it is not, you can install it via
-[https://python.org/downloads](https://www.python.org/downloads/) (tick
-**Add python.exe to PATH**), `brew install python` on macOS, or
-`sudo apt install -y python3` on Linux. If Claude still can't find Python, Windows may
-be shadowing it: turn that off under Settings → Apps → Advanced app settings → App
-execution aliases.
+[https://python.org/downloads](https://www.python.org/downloads/) (tick **Add python.exe to PATH**), 
+`brew install python` on macOS, or `sudo apt install -y python3` on Linux. If Claude 
+still can't find Python, Windows may be shadowing it: turn that off under 
+Settings → Apps → Advanced app settings → App execution aliases.
 
 ---
 
